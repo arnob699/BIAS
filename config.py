@@ -15,9 +15,10 @@ import re
 from typing import Any, Dict, List
 from dotenv import load_dotenv
 
-# Load environment variables from .env (with .env.example fallback)
-load_dotenv()
-load_dotenv(".env.example")
+# Load environment variables from Render Secret Files (/etc/secrets/.env), local .env, and .env.example fallback
+load_dotenv("/etc/secrets/.env", override=True)
+load_dotenv(".env", override=True)
+load_dotenv(".env.example", override=False)
 
 # ---------------------------------------------------------------------------
 # API & Free-Tier Model Fallback Configuration (Gemini Primary -> Groq Fallback)
