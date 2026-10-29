@@ -1,0 +1,146 @@
+TOTAL ROWS: 18
+
+--- ROW #01 ---
+  Impact Weight: 10 /10
+  Published:     29 Oct 2026 08:48 PM BST 42m ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      European Central Bank keeps key interest rate on hold at 2.5% CNBC Top Financial News 29 Oct 2026, 08:48 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     ECB rate hold keeps the dollar strong, raising opportunity cost for gold.
+
+--- ROW #02 ---
+  Impact Weight: 10 /10
+  Published:     29 Oct 2026 12:44 PM BST 8.8h ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      Following the Federal Reserve's interest rate decision, the U.S. Dollar Index continues to fluctuate at elevated levels. Moomoo (via Google News (US CPI / NFP / Core PCE / DXY)) 29 Oct 2026, 12:44 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Elevated dollar keeps gold’s opportunity cost high.
+
+--- ROW #03 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 07:09 PM BST 2.3h ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      Above 102.00: US Dollar Index Price Forecast remains bullish as gains hold www.tmgm.com (via Google News (US CPI / NFP / Core PCE / DXY)) 29 Oct 2026, 07:09 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Bullish dollar keeps gold’s opportunity cost high.
+
+--- ROW #04 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 07:46 PM BST 1.7h ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      Federal Reserve pauses federal funds rate after first increase in more than three years Logistics Management (via Google News (Fed / FOMC / US 10Y Yields)) 29 Oct 2026, 07:46 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Rate pause signals continued hawkishness, keeping gold bearish.
+
+--- ROW #05 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 05:36 PM BST 3.9h ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      Gold Prices Fall to $4,038 as Investors Await US Inflation Data Following Fed Rate Decision Yahoo Finance Gold Futures (GC=F) 29 Oct 2026, 05:36 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Fed rate hold keeps gold’s opportunity cost high, pushing prices lower.
+
+--- ROW #06 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 06:52 PM BST 2.6h ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      Federal Reserve’s preferred measure of inflation rose slightly in September The Hill (via Google News (Fed / FOMC / US 10Y Yields)) 29 Oct 2026, 06:52 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Higher inflation keeps rates high, keeping gold bearish.
+
+--- ROW #07 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 07:51 PM BST 1.6h ago
+  Wedge:         Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) & US Dollar (DXY)
+  Headline:      Analysis: Kevin Warsh is keeping Wall Street guessing. It may be his most powerful tool. CNBC Economy & Fed 29 Oct 2026, 07:51 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Warsh’s hawkish stance keeps rates high, raising gold’s opportunity cost.
+
+--- ROW #08 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 06:06 PM BST 3.4h ago
+  Wedge:         Wedge 3: Geopolitical Risk, Tariffs, War Escalation & Safe-Haven Flows (^VIX)
+  Headline:      Hegseth reportedly fires U.S. top military planner as Trump downplays Iran peace talks CNBC Top Financial News 29 Oct 2026, 06:06 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Removal of top planner signals uncertainty, reducing safe‑haven demand.
+
+--- ROW #09 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 08:28 PM BST 1.0h ago
+  Wedge:         Wedge 3: Geopolitical Risk, Tariffs, War Escalation & Safe-Haven Flows (^VIX)
+  Headline:      Oil falls as traders weigh Iran diplomacy against renewed strike risks Investing.com Commodities & Gold 29 Oct 2026, 08:28 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Lower oil prices signal easing tensions, reducing safe‑haven demand for gold.
+
+--- ROW #10 ---
+  Impact Weight: 9 /10
+  Published:     29 Oct 2026 03:03 PM BST 6.4h ago
+  Wedge:         Wedge 3: Geopolitical Risk, Tariffs, War Escalation & Safe-Haven Flows (^VIX)
+  Headline:      Trump administration in ongoing talks for a temporary peace deal with Iran Semafor 29 Oct 2026, 03:03 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Peace talks reduce safe‑haven demand for gold.
+
+--- ROW #11 ---
+  Impact Weight: 8 /10
+  Published:     29 Oct 2026 08:11 PM BST 1.3h ago
+  Wedge:         Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+  Headline:      Third-quarter U.S. GDP increases a better-than-expected 3.4% as September inflation accelerates CNBC Top Financial News 29 Oct 2026, 08:11 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Hot GDP keeps the Fed hawkish, keeping gold prices under pressure.
+
+--- ROW #12 ---
+  Impact Weight: 8 /10
+  Published:     29 Oct 2026 07:31 PM BST 2.0h ago
+  Wedge:         Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+  Headline:      In Moving Gradually, Fed Risks Having to Play Catch-Up to Quell Inflation The New York Times (via Google News (Fed / FOMC / US 10Y Yields)) 29 Oct 2026, 07:31 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Fed’s catch‑up risk keeps rates high, suppressing gold demand.
+
+--- ROW #13 ---
+  Impact Weight: 8 /10
+  Published:     29 Oct 2026 04:48 PM BST 4.7h ago
+  Wedge:         Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+  Headline:      10-year Treasury yield hovers above 5% after strong GDP report, rising inflation data CNBC (via Google News (Fed / FOMC / US 10Y Yields)) 29 Oct 2026, 04:48 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     High yields keep gold’s opportunity cost elevated.
+
+--- ROW #14 ---
+  Impact Weight: 8 /10
+  Published:     29 Oct 2026 08:07 PM BST 1.4h ago
+  Wedge:         Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+  Headline:      September US Core PCE Price Index Rises 0.3% Vs. Expected 0.3% Gain, Prior 0.3% Gain marketscreener.com (via Google News (US CPI / NFP / Core PCE / DXY)) 29 Oct 2026, 08:07 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Core PCE rise signals persistent inflation, keeping the Fed from cutting rates.
+
+--- ROW #15 ---
+  Impact Weight: 8 /10
+  Published:     29 Oct 2026 07:00 PM BST 2.5h ago
+  Wedge:         Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+  Headline:      US weekly jobless claims hover near 57-year lows Investing.com Economic Indicators 29 Oct 2026, 07:00 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Low jobless claims signal tight labor market, keeping Fed hawkish.
+
+--- ROW #16 ---
+  Impact Weight: 5 /10
+  Published:     29 Oct 2026 12:30 PM BST 9.0h ago
+  Wedge:         Wedge 4: Central Bank Gold Buying, COMEX Positioning & ETF (GLD) Flows
+  Headline:      Gold (XAUUSD) & Silver Price Forecast: Split Fed Keeps December Hike Alive, Can Gold Hold $4,024? FXEmpire (via Google News (Gold / XAUUSD / COMEX)) 29 Oct 2026, 12:30 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Fed hike outlook weakens gold’s price trajectory.
+
+--- ROW #17 ---
+  Impact Weight: 5 /10
+  Published:     29 Oct 2026 02:05 PM BST 7.4h ago
+  Wedge:         Wedge 4: Central Bank Gold Buying, COMEX Positioning & ETF (GLD) Flows
+  Headline:      Gold Price Forecast for 2026 Cut for Second Straight Quarter; Analysts Still See Rebound to $4,650 in 2027 BigGo Finance (via Google News (Gold / XAUUSD / COMEX)) 29 Oct 2026, 02:05 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Forecast cut signals weaker demand for gold.
+
+--- ROW #18 ---
+  Impact Weight: 5 /10
+  Published:     29 Oct 2026 04:10 PM BST 5.3h ago
+  Wedge:         Wedge 4: Central Bank Gold Buying, COMEX Positioning & ETF (GLD) Flows
+  Headline:      Gold Price Forecast: Dow Ratio Warns of More Downside as Yields Rise FXEmpire (via Google News (Gold / XAUUSD / COMEX)) 29 Oct 2026, 04:10 PM BST
+  Sentiment:     BEARISH GOLD
+  Desk Note:     Yield rise weakens gold’s price outlook.
+
