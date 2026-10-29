@@ -203,6 +203,20 @@ _DEDUP_SYNONYMS: Dict[str, str] = {
     "drops": "drop",
     "slips": "drop",
     "edges": "move",
+    "pauses": "hold",
+    "pause": "hold",
+    "pausing": "hold",
+    "quarter": "qtr",
+    "third": "3rd",
+    "increases": "rise",
+    "accelerates": "rise",
+    "grows": "rise",
+    "climbs": "rise",
+    "surges": "rise",
+    "slows": "cool",
+    "cooling": "cool",
+    "dips": "drop",
+    "retreats": "drop",
 }
 
 
@@ -686,6 +700,30 @@ def _fetch_single_gold_rss_feed(
     return items
 
 
+
+def _extract_story_topic_key(headline: str, summary: str = "") -> Optional[str]:
+    """
+    Extract a coarse topic cluster signature for major market events to prevent
+    multiple news outlets reporting on the exact same event from flooding the 18 slots.
+    """
+    text = f"{headline} {summary}".lower()
+    if "gdp" in text and ("3.4" in text or "quarter" in text or "q3" in text or "growth" in text):
+        return "MACRO_US_Q3_GDP"
+    if "pce" in text and ("0.3" in text or "core" in text or "september" in text or "preferred measure" in text):
+        return "MACRO_US_CORE_PCE"
+    if "jobless claims" in text or "initial claims" in text or ("claims" in text and ("194k" in text or "57-year" in text or "lows" in text)):
+        return "MACRO_US_JOBLESS_CLAIMS"
+    if ("fed" in text or "federal reserve" in text or "fomc" in text) and ("pause" in text or "hold" in text or "steady" in text or "unchanged" in text) and "rate" in text:
+        return "FED_RATE_HOLD"
+    if "ecb" in text or "european central bank" in text:
+        return "ECB_RATE_HOLD"
+    if "oil" in text and ("diplomacy" in text or "iran" in text or "middle east" in text or "strike" in text):
+        return "OIL_MIDEAST_DIPLOMACY"
+    if "warsh" in text:
+        return "FED_WARSH_COMMENTARY"
+    return None
+
+
 def deduplicate_gold_news_items(
     raw_items: List[Dict[str, Any]],
     max_items: int = MAX_BREAKING_NEWS_ITEMS,
@@ -710,12 +748,28 @@ def deduplicate_gold_news_items(
 
     accepted_items: List[Dict[str, Any]] = []
     accepted_token_sets: List[Set[str]] = []
+    seen_topics: Set[str] = set()
     seen_urls: Set[str] = set()
     source_counts: Dict[str, int] = {}
 
     for item in sorted_items:
         if item.get("age_minutes", 0) > max_age_minutes:
             continue
+
+        hl = item.get("headline", "")
+        summary = item.get("summary", "")
+        comb = f"{hl} {summary}".lower()
+
+        # Reject noise patterns
+        if any(noise in comb for noise in EXCLUDED_NOISE_PATTERNS):
+            continue
+
+        # Prevent duplicate coverage of the exact same event
+        topic_key = _extract_story_topic_key(hl, summary)
+        if topic_key is not None:
+            if topic_key in seen_topics:
+                continue
+            seen_topics.add(topic_key)
 
         base_source = (item.get("source") or "Unknown").split("(via")[0].strip()
         if source_counts.get(base_source, 0) >= max_per_source:
@@ -725,11 +779,11 @@ def deduplicate_gold_news_items(
         if url and url in seen_urls:
             continue
 
-        tokens = _tokenize_headline(item.get("headline", ""))
+        tokens = _tokenize_headline(hl)
         if len(tokens) < 3:
             continue
 
-        if any(_are_headlines_duplicate(tokens, existing) for existing in accepted_token_sets):
+        if any(_are_headlines_duplicate(tokens, existing, threshold=0.32) for existing in accepted_token_sets):
             continue
 
         accepted_token_sets.append(tokens)
@@ -1234,7 +1288,7 @@ def fetch_gold_economic_calendar(
             outcome_label = "Hawkish Hold (Actual = Forecast)" if delta_hours <= 0 else "Consensus: Rate Hold"
             smart_gold_bias = "BEARISH GOLD"
             projection_note = (
-                f"Fed holds at {forecast_str or 'current target'} alongside >5.0% 10Y yields (^TNX), maintaining "
+                f"Fed holds policy rate steady at {forecast_str or '4.00%'}, maintaining elevated carry costs for non-yielding XAUUSD amid firm real yields."
                 f"high opportunity-cost headwinds for non-yielding XAUUSD."
             )
         elif profile.get("is_speech_or_statement"):
