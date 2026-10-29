@@ -145,39 +145,51 @@ class GoldAnalysisReport(BaseModel):
 GOLD_SYSTEM_INSTRUCTION = """You are a Senior Institutional Precious Metals Quantitative Strategist specializing exclusively in Gold (`XAUUSD` spot bullion and COMEX Gold Futures `GC=F`).
 
 You will receive a single batched JSON payload containing:
-1. Live intraday prices, % changes, and intraday high/low ranges for:
-   - `GC=F` (COMEX Gold Futures / XAUUSD proxy)
-   - `DX-Y.NYB` (US Dollar Index / DXY — primary inverse driver)
-   - `^TNX` (US 10-Year Treasury Yield — real yield opportunity-cost inverse driver)
-   - `^VIX` (CBOE Volatility Index — safe-haven fear gauge)
-   - `GLD` (SPDR Gold Trust ETF — institutional Gold flow proxy)
-2. The top 18 deduplicated intraday breaking news headlines (with timestamps and pre-tagged wedge metadata).
+1. Live intraday market quotes (% change and levels) for:
+   - `GC=F`: COMEX Gold Futures (primary target)
+   - `DX-Y.NYB` (DXY): US Dollar Index (INVERSE DRIVER: Strong USD = Bearish Gold; Weak USD = Bullish Gold)
+   - `^TNX`: US 10-Year Treasury Yield (INVERSE REAL-RATE DRIVER: Higher Yields = Bearish Gold; Falling Yields = Bullish Gold)
+   - `^VIX`: CBOE Volatility Index (SAFE-HAVEN FEAR GAUGE: Spiking panic = Bullish Gold; Falling/calm = Safe-Haven unwinds)
+   - `GLD`: SPDR Gold Trust ETF (Institutional physical flow proxy)
+2. All 18 deduplicated breaking headlines with full summaries, timestamps, sources, and pre-classified Gold Wedges.
 
-APPLY THESE EXACT INSTITUTIONAL GOLD (`XAUUSD` / `GC=F`) CORRELATION & WEDGE SCORING RULES:
+YOU MUST APPLY THESE EXACT PRECIOUS METALS CORRELATION & POLARITY RULES (NO CONTRADICTIONS):
 
-1. THE 4 GOLD IMPACT WEDGES & WEIGHTS:
-   - Wedge 1 (40% Weight / Impact Weight 8-10): Fed/FOMC Policy, US 10Y Treasury Yield (`^TNX`), and US Dollar Index (`DXY`).
-   - Wedge 2 (30% Weight / Impact Weight 7-9): US Tier-1 Economic Data (CPI, Core PCE, NFP, Jobless Claims, GDP, ISM PMI).
-   - Wedge 3 (20% Weight / Impact Weight 8-10 on spikes): Geopolitical Risk, Tariffs, War Escalation & Safe-Haven Flows (`^VIX`).
-   - Wedge 4 (10% Weight / Impact Weight 3-6): Central Bank Gold Buying, COMEX physical positioning & ETF (`GLD`) flows.
+1. US DOLLAR (DXY) & TREASURY YIELDS (^TNX) — WEDGE 1 (40% Weight):
+   - If headlines say the US Dollar Index is bullish, firmed, or breaking higher -> THIS IS BEARISH FOR GOLD (-20 to -60).
+   - If US 10Y Yields rise -> BEARISH FOR GOLD (-25 to -70).
+   - If US 10Y Yields fall or DXY softens -> BULLISH FOR GOLD (+20 to +65).
+   - Fed holding rates steady or pushing back against cuts -> BEARISH FOR GOLD (-25 to -50) because it maintains high opportunity cost.
+   - European Central Bank (ECB) rate hold with no direct USD/Gold impact -> NEUTRAL (0).
 
-2. INVERSE YIELD & USD RULE (Wedge 1 - 40%):
-   - Because physical Gold pays zero coupon/yield, rising `^TNX` (US 10Y Yields) and a rising `DXY` (US Dollar Index) increase the opportunity cost and foreign-currency price of holding Gold -> BEARISH (`SELL`) for `XAUUSD`.
-   - Falling `^TNX` yields, dovish Federal Reserve commentary, rate-cut pricing, and a weaker `DXY` -> BULLISH (`BUY`) for `XAUUSD`.
+2. US TIER-1 ECONOMIC DATA — WEDGE 2 (30% Weight):
+   - Hot GDP (+3.4% beat), elevated Core PCE (+0.3%), hot CPI, or multi-decade low jobless claims (tight labor) force the Fed to stay hawkish and delay rate cuts -> BEARISH FOR GOLD (-25 to -60).
+   - Cooling inflation, rising jobless claims, weak growth, or stagflation -> BULLISH FOR GOLD (+20 to +65).
 
-3. US ECONOMIC DATA RULE (Wedge 2 - 30%):
-   - Hotter-than-expected CPI/PCE inflation or booming NFP/GDP prints that force the Fed to delay rate cuts (or hike rates) -> BEARISH Gold (`SELL`).
-   - Cooling inflation, rising unemployment/jobless claims, weak NFP/ISM PMI (which accelerates Fed rate cuts), OR Stagflation (weak real growth + sticky inflation) -> BULLISH Gold (`BUY`).
+3. GEOPOLITICAL RISK & SAFE-HAVEN FLOWS — WEDGE 3 (20% Weight):
+   - Acute war escalation, missile strikes, military conflict, trade war tariffs -> BULLISH GOLD SAFE-HAVEN (+40 to +90).
+   - Peace talks, diplomatic negotiations, ceasefire agreements, or falling oil prices because of diplomacy -> DE-ESCALATION / SAFE-HAVEN UNWIND (BEARISH / NEUTRAL FOR GOLD: -15 to -40). (Do NOT score peace talks or diplomacy as Bullish Gold!).
 
-4. GEOPOLITICAL SAFE-HAVEN OVERRIDE RULE (Wedge 3 - 20%, Weight 8-10 on spikes):
-   - Acute geopolitical escalation, military strikes, war headlines, sovereign debt/fiscal crises, tariff shocks, or banking stress -> High-Weight BULLISH Gold (`+80` to `+100`).
-   - CRITICAL OVERRIDE: During acute geopolitical panic or systemic fear, safe-haven Gold buying OVERRIDES a rising `DXY` (Gold and `DXY` rally together as global capital flees into both USD and bullion).
+4. CENTRAL BANK & ETF FLOWS — WEDGE 4 (10% Weight):
+   - Sovereign central bank reserve accumulation -> BULLISH GOLD (+25 to +60).
+   - GLD ETF outflows, technical breakdown warnings, or institutional liquidation -> BEARISH GOLD (-20 to -50).
 
-5. CONFIDENCE SCORE CALIBRATION (`0` to `100`):
-   - Output High Confidence (`80-100%`) ONLY when `DXY`, `^TNX` yields, US macro conditions, and high-weight breaking news all align in the same direction for Gold (e.g., if all are bearish for Gold, output `SELL` or `STRONG SELL` with `85-98%` confidence; if all are bullish, output `BUY` or `STRONG BUY` with `85-98%` confidence).
-   - Output Low/Medium Confidence (`30-65%`) when intraday news conflicts with macro/yields (e.g., strong DXY/Yields pulling Gold down while geopolitical headlines or central bank buying support safe-haven demand).
+5. POLARITY INTEGRITY REQUIREMENTS:
+   - For every headline in `news_items`:
+     - If `gold_bias` is "BULLISH GOLD", `sentiment_score` MUST be positive (+15 to +100).
+     - If `gold_bias` is "BEARISH GOLD", `sentiment_score` MUST be negative (-15 to -100).
+     - If `gold_bias` is "NEUTRAL", `sentiment_score` MUST be between -14 and +14 (typically 0).
+     - `gold_transmission_mechanism` MUST be 1 concise sentence explaining the exact transmission to Gold prices.
+   - For `wedge_breakdown`:
+     - Provide `net_sentiment_score` (-100.0 to +100.0) reflecting the net balance of news and live ticker moves in each of the 4 wedges.
+   - For `overall_bias` and `weighted_sentiment_score`:
+     - Calculate composite score = 0.40 * W1 + 0.30 * W2 + 0.20 * W3 + 0.10 * W4.
+     - Bias is "BUY" if score >= +15.0 ("STRONG BUY" if >= +45.0).
+     - Bias is "SELL" if score <= -15.0 ("STRONG SELL" if <= -45.0).
+     - Bias is "NEUTRAL / CHOPPY" if score is between -15.0 and +15.0.
+   - Provide 4-6 concise takeaway bullets (`why_buy_or_sell_thesis`) including the #1 invalidation risk.
 
-Analyze all 18 provided breaking news items in `news_items`, provide all 4 wedges in `wedge_breakdown`, provide 4-6 actionable institutional bullets in `why_buy_or_sell_thesis` (always including the #1 intraday invalidation risk as the final bullet), and return strictly valid JSON matching `GoldAnalysisReport`.
+Return strictly valid JSON matching `GoldAnalysisReport`.
 """
 
 
@@ -226,10 +238,16 @@ _BULLISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
     "softer dollar": (+50, "Softer USD trading supports precious metals valuations."),
     "inflation cools": (+60, "Cooling inflation strengthens the case for Fed easing and lower real yields, lifting Gold."),
     "uncertainty": (+45, "Macro and policy uncertainty reinforces defensive allocation into physical Gold."),
-    "bullish": (+50, "Bullish institutional positioning supports upside momentum in XAUUSD."),
+    "gold bullish": (+50, "Bullish institutional positioning supports upside momentum in XAUUSD."),
+    "bullish gold": (+50, "Bullish institutional positioning supports upside momentum in XAUUSD."),
+    "bullish on gold": (+50, "Bullish institutional positioning supports upside momentum in XAUUSD."),
 }
 
 _BEARISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
+    "dollar index remains bullish": (-50, "A firmer US Dollar Index forecast creates direct inverse headwinds for XAUUSD."),
+    "dollar remains bullish": (-50, "A firmer US Dollar Index forecast creates direct inverse headwinds for XAUUSD."),
+    "dollar bullish": (-50, "Dollar bullishness raises the opportunity cost of holding USD-denominated Gold."),
+    "dxy remains bullish": (-50, "A stronger US Dollar Index trajectory weighs on bullion prices."),
     "rate hike": (-75, "Hawkish rate-hike risk pushes real yields and DXY higher, penalizing zero-yielding Gold."),
     "hawkish": (-65, "Hawkish Fed positioning lifts real Treasury yields and strengthens DXY against XAUUSD."),
     "wait-and-see": (-45, "Fed patience on rate cuts keeps real interest rates elevated for longer, capping Gold upside."),
@@ -281,6 +299,9 @@ _BEARISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
 }
 
 _NEUTRAL_EDUCATIONAL_CUES: Tuple[str, ...] = (
+    "ecb keeps",
+    "ecb hold",
+    "european central bank keeps",
     "playbook",
     "trader's guide",
     "traders guide",
@@ -659,55 +680,33 @@ def _reconcile_and_validate_analysis(
             n["headline"] = raw_ref.get("headline") or n.get("headline")
             n["source_time"] = raw_ref.get("source_time") or n.get("source_time")
             hl_lower = (n.get("headline") or "").strip().lower()
-        det_ref = _score_headline_deterministically(raw_ref) if raw_ref else None
 
         score = int(n.get("sentiment_score", 0))
         bias = (n.get("gold_bias") or "NEUTRAL").upper()
         weight = int(n.get("impact_weight", 5))
         wedge_cat = n.get("gold_wedge_category") or ""
 
-        # Lock wedge category to pre-classified wedge so different LLMs never bucket headlines into different wedges
+        # Lock wedge category to pre-classified wedge
         if raw_ref and (raw_ref.get("gold_wedge") or {}).get("wedge_name"):
             wedge_cat = raw_ref["gold_wedge"]["wedge_name"]
             n["gold_wedge_category"] = wedge_cat
 
-        # Respect LLM score while gently anchoring against explicit keyword cues
-        if det_ref is not None:
-            if any(cue in hl_lower for cue in _NEUTRAL_EDUCATIONAL_CUES):
-                score = 0
-                weight = min(weight, 4)
-            elif score == 0 and det_ref.sentiment_score != 0:
-                score = det_ref.sentiment_score
-            elif det_ref.sentiment_score != 0:
-                score = int(round(0.65 * score + 0.35 * det_ref.sentiment_score))
-
-        # Prevent explicitly bearish Gold price-action headlines from being scored positive
-        if any(p in hl_lower for p in explicit_bearish_phrases) and score > -20:
-            score = -40
-            bias = "BEARISH GOLD"
-            n["gold_transmission_mechanism"] = (
-                "Intraday downside pressure in spot XAUUSD reflects pre-event caution and firm US real yields."
-            )
-
-        # Align borderline LLM scores with explicit LLM bias labels
-        if bias == "BEARISH GOLD" and -14 <= score < -5:
-            score = -20
-        elif bias == "BULLISH GOLD" and 5 < score <= 14:
-            score = 20
-
-        # Strictly enforce bias label from score thresholds
-        if score >= 15:
+        # NO BLENDER: Let the model evaluate the news without heuristic keyword blending.
+        # Simply enforce directional sanity:
+        # If model labeled BULLISH GOLD, score must be >= 15
+        if "BULL" in bias:
             bias = "BULLISH GOLD"
-        elif score <= -15:
+            score = max(15, min(100, score if score >= 15 else 30))
+        # If model labeled BEARISH GOLD, score must be <= -15
+        elif "BEAR" in bias:
             bias = "BEARISH GOLD"
+            score = min(-15, max(-100, score if score <= -15 else -30))
+        # If model labeled NEUTRAL, score must be near zero
         else:
             bias = "NEUTRAL"
-            score = 0 if abs(score) <= 8 else score
-            # Prevent neutral/educational/noise items from carrying a 9/10 High weight
-            if abs(score) <= 10:
-                weight = min(weight, 4)
+            score = max(-14, min(14, score))
 
-        n["sentiment_score"] = max(-100, min(100, score))
+        n["sentiment_score"] = score
         n["gold_bias"] = bias
         n["impact_weight"] = max(1, min(10, weight))
         reconciled_news.append(n)
@@ -717,7 +716,7 @@ def _reconcile_and_validate_analysis(
 
     output["news_items"] = reconciled_news
 
-    # 2. Compute mathematically grounded Wedge Scores (blending headline scores + live ticker regime)
+    # 2. Compute transparent, mathematical Wedge Scores directly from the model and news items
     def _w_avg(pairs: List[Tuple[int, int]], fallback: float) -> float:
         if not pairs:
             return fallback
@@ -725,44 +724,24 @@ def _reconcile_and_validate_analysis(
         den = sum(w for _, w in pairs)
         return round(num / max(den, 1), 1)
 
-    macro_w1 = 0.0
-    if tnx_chg >= 0.60:
-        macro_w1 -= 35.0
-    elif tnx_chg >= 0.20:
-        macro_w1 -= 20.0
-    elif tnx_chg <= -0.60:
-        macro_w1 += 35.0
-    elif tnx_chg <= -0.20:
-        macro_w1 += 20.0
-
-    if dxy_chg >= 0.35:
-        macro_w1 -= 25.0
-    elif dxy_chg >= 0.12:
-        macro_w1 -= 12.0
-    elif dxy_chg <= -0.35:
-        macro_w1 += 25.0
-    elif dxy_chg <= -0.12:
-        macro_w1 += 12.0
-
     existing_wedges = output.get("wedge_breakdown") or []
     llm_w_map = {int(w.get("weight_percentage", 0)): float(w.get("net_sentiment_score", 0.0)) for w in existing_wedges}
 
+    # Wedge 1: Model's Fed/Yields/DXY evaluation, anchored by the news in that wedge
     w1_news_avg = _w_avg(wedge_scores_by_id[1], llm_w_map.get(40, 0.0))
-    w1_data = round(0.45 * macro_w1 + 0.55 * w1_news_avg, 1)
-    w1_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(40, w1_data) + 0.45 * w1_data, 1)))
+    w1_calc = round(llm_w_map.get(40, w1_news_avg), 1)
 
+    # Wedge 2: US Tier-1 Macro (GDP, PCE, CPI, Claims)
     w2_news_avg = _w_avg(wedge_scores_by_id[2], llm_w_map.get(30, 0.0))
-    w2_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(30, w2_news_avg) + 0.45 * w2_news_avg, 1)))
+    w2_calc = round(llm_w_map.get(30, w2_news_avg), 1)
 
-    vix_adj = 25.0 if vix_price >= 20.0 else (10.0 if vix_price >= 16.0 else 0.0)
-    w3_news_avg = _w_avg(wedge_scores_by_id[3], llm_w_map.get(20, 20.0))
-    w3_data = round(0.30 * vix_adj + 0.70 * w3_news_avg, 1)
-    w3_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(20, w3_data) + 0.45 * w3_data, 1)))
+    # Wedge 3: Geopolitical Risk & Safe-Haven Flows
+    w3_news_avg = _w_avg(wedge_scores_by_id[3], llm_w_map.get(20, 0.0))
+    w3_calc = round(llm_w_map.get(20, w3_news_avg), 1)
 
-    flow_adj = 30.0 if (gc_chg > 0.25 or gld_chg > 0.25) else (-25.0 if (gc_chg < -0.50 and gld_chg < -0.50) else 5.0)
-    w4_news_avg = _w_avg(wedge_scores_by_id[4], llm_w_map.get(10, 10.0))
-    w4_data = round(0.45 * flow_adj + 0.55 * w4_news_avg, 1)
-    w4_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(10, w4_data) + 0.45 * w4_data, 1)))
+    # Wedge 4: Central Bank & ETF Flows
+    w4_news_avg = _w_avg(wedge_scores_by_id[4], llm_w_map.get(10, 0.0))
+    w4_calc = round(llm_w_map.get(10, w4_news_avg), 1)
 
     calc_by_weight = {40: w1_calc, 30: w2_calc, 20: w3_calc, 10: w4_calc}
     if len(existing_wedges) == 4:
@@ -972,12 +951,14 @@ def _analyze_with_groq(
 
     compact_headlines = [
         {
+            "rank": idx + 1,
             "headline": h.get("headline"),
+            "summary": (h.get("summary") or "")[:200],
             "source_time": h.get("source_time"),
             "wedge": h.get("pre_classified_wedge"),
             "weight": h.get("suggested_impact_weight"),
         }
-        for h in (batched_prompt_payload.get("intraday_breaking_headlines") or [])
+        for idx, h in enumerate(batched_prompt_payload.get("intraday_breaking_headlines") or [])
     ]
 
     compact_payload_str = json.dumps(
