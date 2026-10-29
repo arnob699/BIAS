@@ -28,6 +28,7 @@ GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
 GEMINI_FALLBACK_MODELS: List[str] = [
     GEMINI_MODEL,
     "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
 ]
 # Deduplicate model list while preserving order
 GEMINI_MODEL_CHAIN: List[str] = list(dict.fromkeys(GEMINI_FALLBACK_MODELS))
