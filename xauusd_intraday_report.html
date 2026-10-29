@@ -287,11 +287,21 @@
       <div class="flex flex-wrap items-center gap-3 text-xs">
         <div class="paper-inset rounded-lg px-3.5 py-2">
           <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Last Updated (BST &bull; Bangladesh Standard Time)</div>
-          <div class="text-[#1F1C18] font-mono font-semibold mt-0.5">29 Oct 2026, 08:35:22 PM BST</div>
+          <div class="text-[#1F1C18] font-mono font-semibold mt-0.5">29 Oct 2026, 08:50:17 PM BST</div>
         </div>
-        <div class="paper-inset rounded-lg px-3.5 py-2">
-          <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Analysis Engine</div>
-          <div class="text-[#9A6B16] font-mono font-semibold mt-0.5">gemini_api (gemini-3.5-flash-lite)</div>
+        <div class="paper-inset rounded-lg px-3.5 py-2 max-w-md">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Analysis Engine</span>
+            
+            <span class="px-1.5 py-0.5 rounded bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0] text-[9px] font-mono font-bold uppercase">Groq Fallback Active</span>
+            
+          </div>
+          <div class="text-[#9A6B16] font-mono font-bold mt-0.5 text-xs">groq_api (openai/gpt-oss-120b)</div>
+          
+          <div class="text-[#A82828] font-mono text-[10px] mt-0.5 leading-snug">
+            &#9888; Gemini (gemini-3.5-flash) HTTP 429 Quota Exhausted (RESOURCE_EXHAUSTED) → Auto-Switched to Groq
+          </div>
+          
         </div>
         <div class="paper-inset rounded-lg px-3.5 py-2">
           <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">News Sources Checked</div>
@@ -306,7 +316,7 @@
     <!-- 1. HERO DESK VERDICT & CONVICTION SUMMARY                           -->
     <!-- =================================================================== -->
     <section aria-label="Daily Desk Verdict" class="paper-card rounded-xl p-6 border-l-4"
-             style="border-left-color: #B83232;">
+             style="border-left-color: #B47B1C;">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
 
         <!-- Left: Directional Call -->
@@ -314,18 +324,18 @@
           <div class="text-xs font-semibold uppercase tracking-wider text-[#655D52]">
             Current Desk Call
           </div>
-          <div class="inline-flex items-center gap-2.5 self-start px-4 py-2.5 rounded-lg border-2 bg-[#FDF2F2] border-[#B83232] text-[#A82828]">
-            <span class="w-3 h-3 rounded-full bg-[#B83232]"></span>
+          <div class="inline-flex items-center gap-2.5 self-start px-4 py-2.5 rounded-lg border-2 bg-[#FBF3E0] border-[#B47B1C] text-[#8A5A0E]">
+            <span class="w-3 h-3 rounded-full bg-[#B47B1C]"></span>
             <span class="font-serif text-xl sm:text-2xl font-bold tracking-tight">
-              SELL • XAUUSD
+              NEUTRAL / RANGE • XAUUSD
             </span>
           </div>
           <div class="pt-1">
-            <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold border bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]">
-              Strong Alignment Across Yields, Dollar &amp; News
+            <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold border bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]">
+              Two-Way Market: Mixed Rate &amp; Safe-Haven Signals
             </span>
             <p class="text-xs text-[#5C5346] mt-1.5 leading-relaxed">
-              Treasury yields (^TNX), the US Dollar (DXY), and breaking macro news are all pointing in the same direction for Gold.
+              Competing signals between Treasury yields and physical/safe-haven flows keep Gold in a range-trading environment.
             </p>
           </div>
         </div>
@@ -337,9 +347,8 @@
               Net Fundamental Balance
             </span>
             <span class="text-xl font-mono font-bold
-              text-[#A82828]
-              ">
-              -34.6 <span class="text-xs font-normal text-[#786E60]">/ 100</span>
+              text-[#9A6B16]">
+              +2.4 <span class="text-xs font-normal text-[#786E60]">/ 100</span>
             </span>
           </div>
 
@@ -349,7 +358,7 @@
               <div class="w-1/2 bg-gradient-to-r from-transparent via-[#1B6B45]/10 to-[#1B6B45]/25"></div>
             </div>
             <div class="absolute top-0 bottom-0 w-2.5 -ml-1.5 rounded-full bg-[#1F1C18] border-2 border-[#FFFDF9] shadow"
-                 style="left: 32.7%;"></div>
+                 style="left: 51.2%;"></div>
           </div>
 
           <div class="flex justify-between text-[11px] font-medium text-[#655D52]">
@@ -366,13 +375,13 @@
               Desk Conviction Level
             </span>
             <span class="text-xl font-mono font-bold text-[#1F1C18]">
-              88%
+              46%
             </span>
           </div>
 
           <div class="w-full h-3.5 bg-[#EFE9DD] rounded-full border border-[#D5CBB8] overflow-hidden p-0.5">
-            <div class="h-full rounded-full bg-[#B83232] transition-all duration-500"
-                 style="width: 88%;"></div>
+            <div class="h-full rounded-full bg-[#B47B1C] transition-all duration-500"
+                 style="width: 46%;"></div>
           </div>
 
           <div class="flex justify-between text-[11px] font-medium text-[#655D52]">
@@ -415,33 +424,33 @@
             </div>
             <span class="px-2 py-0.5 rounded text-[10px] font-semibold border
               
-                bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
+                bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
               ">
-              BEARISH GOLD
+              NEUTRAL
             </span>
           </div>
 
           
           <div class="mt-3 flex items-baseline justify-between">
             <div class="text-2xl font-mono font-semibold tracking-tight text-[#1F1C18]">
-              $4,035.70<span class="text-xs font-normal text-[#786E60] ml-1">/oz</span>
+              $4,042.80<span class="text-xs font-normal text-[#786E60] ml-1">/oz</span>
             </div>
             <div class="flex items-center gap-0.5 font-mono text-xs font-semibold
               
                 text-[#A82828]
               ">
               <span>▼</span>
-              <span>-0.39%</span>
+              <span>-0.22%</span>
             </div>
           </div>
 
           <div class="mt-2.5 pt-2 border-t border-[#EAE3D5] flex items-center justify-between text-[11px] font-mono text-[#655D52]">
             <span>Low: <strong class="text-[#1F1C18]">4,027.00</strong></span>
             <span>High: <strong class="text-[#1F1C18]">4,081.70</strong></span>
-            <span>5d: <strong class="text-[#A82828]">-0.07%</strong></span>
+            <span>5d: <strong class="text-[#1B6B45]">+0.11%</strong></span>
           </div>
-          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Intraday Gold distribution (-0.39% | 5d: -0.07%)">
-            Intraday Gold distribution (-0.39% | 5d: -0.07%)
+          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Consolidating near $4,042.80/oz (-0.22% intraday)">
+            Consolidating near $4,042.80/oz (-0.22% intraday)
           </p>
           
         </div>
@@ -470,24 +479,24 @@
           
           <div class="mt-3 flex items-baseline justify-between">
             <div class="text-2xl font-mono font-semibold tracking-tight text-[#1F1C18]">
-              102.10<span class="text-xs font-normal text-[#786E60] ml-1">pts</span>
+              102.17<span class="text-xs font-normal text-[#786E60] ml-1">pts</span>
             </div>
             <div class="flex items-center gap-0.5 font-mono text-xs font-semibold
               
                 text-[#1B6B45]
               ">
               <span>▼</span>
-              <span>-0.08%</span>
+              <span>-0.02%</span>
             </div>
           </div>
 
           <div class="mt-2.5 pt-2 border-t border-[#EAE3D5] flex items-center justify-between text-[11px] font-mono text-[#655D52]">
             <span>Low: <strong class="text-[#1F1C18]">102.06</strong></span>
             <span>High: <strong class="text-[#1F1C18]">102.45</strong></span>
-            <span>5d: <strong class="text-[#1B6B45]">+0.14%</strong></span>
+            <span>5d: <strong class="text-[#1B6B45]">+0.20%</strong></span>
           </div>
-          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Rangebound DXY at 102.10 (-0.08%)">
-            Rangebound DXY at 102.10 (-0.08%)
+          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Rangebound DXY at 102.17 (-0.02%)">
+            Rangebound DXY at 102.17 (-0.02%)
           </p>
           
         </div>
@@ -516,24 +525,24 @@
           
           <div class="mt-3 flex items-baseline justify-between">
             <div class="text-2xl font-mono font-semibold tracking-tight text-[#1F1C18]">
-              4.991<span class="text-xs font-normal text-[#786E60] ml-1">%</span>
+              4.982<span class="text-xs font-normal text-[#786E60] ml-1">%</span>
             </div>
             <div class="flex items-center gap-0.5 font-mono text-xs font-semibold
               
                 text-[#1B6B45]
               ">
               <span>▼</span>
-              <span>-1.07%</span>
+              <span>-1.25%</span>
             </div>
           </div>
 
           <div class="mt-2.5 pt-2 border-t border-[#EAE3D5] flex items-center justify-between text-[11px] font-mono text-[#655D52]">
             <span>Low: <strong class="text-[#1F1C18]">4.949</strong></span>
             <span>High: <strong class="text-[#1F1C18]">5.032</strong></span>
-            <span>5d: <strong class="text-[#1B6B45]">+0.06%</strong></span>
+            <span>5d: <strong class="text-[#A82828]">-0.12%</strong></span>
           </div>
-          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Falling 10Y Yield (4.991%, -0.054%) compresses real rates &amp; boosts Gold">
-            Falling 10Y Yield (4.991%, -0.054%) compresses real rates &amp; boosts Gold
+          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Falling 10Y Yield (4.982%, -0.063%) compresses real rates &amp; boosts Gold">
+            Falling 10Y Yield (4.982%, -0.063%) compresses real rates &amp; boosts Gold
           </p>
           
         </div>
@@ -562,24 +571,24 @@
           
           <div class="mt-3 flex items-baseline justify-between">
             <div class="text-2xl font-mono font-semibold tracking-tight text-[#1F1C18]">
-              16.68<span class="text-xs font-normal text-[#786E60] ml-1">pts</span>
+              16.49<span class="text-xs font-normal text-[#786E60] ml-1">pts</span>
             </div>
             <div class="flex items-center gap-0.5 font-mono text-xs font-semibold
               
                 text-[#655D52]
               ">
               <span>▼</span>
-              <span>-1.36%</span>
+              <span>-2.48%</span>
             </div>
           </div>
 
           <div class="mt-2.5 pt-2 border-t border-[#EAE3D5] flex items-center justify-between text-[11px] font-mono text-[#655D52]">
-            <span>Low: <strong class="text-[#1F1C18]">16.65</strong></span>
+            <span>Low: <strong class="text-[#1F1C18]">16.49</strong></span>
             <span>High: <strong class="text-[#1F1C18]">17.36</strong></span>
-            <span>5d: <strong class="text-[#A82828]">-14.24%</strong></span>
+            <span>5d: <strong class="text-[#A82828]">-15.22%</strong></span>
           </div>
-          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Normal Volatility Regime (VIX 16.68, -1.36%)">
-            Normal Volatility Regime (VIX 16.68, -1.36%)
+          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="Normal Volatility Regime (VIX 16.49, -2.48%)">
+            Normal Volatility Regime (VIX 16.49, -2.48%)
           </p>
           
         </div>
@@ -608,24 +617,24 @@
           
           <div class="mt-3 flex items-baseline justify-between">
             <div class="text-2xl font-mono font-semibold tracking-tight text-[#1F1C18]">
-              $369.09<span class="text-xs font-normal text-[#786E60] ml-1"></span>
+              $369.26<span class="text-xs font-normal text-[#786E60] ml-1"></span>
             </div>
             <div class="flex items-center gap-0.5 font-mono text-xs font-semibold
               
                 text-[#A82828]
               ">
               <span>▼</span>
-              <span>-1.18%</span>
+              <span>-1.14%</span>
             </div>
           </div>
 
           <div class="mt-2.5 pt-2 border-t border-[#EAE3D5] flex items-center justify-between text-[11px] font-mono text-[#655D52]">
             <span>Low: <strong class="text-[#1F1C18]">368.04</strong></span>
-            <span>High: <strong class="text-[#1F1C18]">369.93</strong></span>
-            <span>5d: <strong class="text-[#1B6B45]">+0.68%</strong></span>
+            <span>High: <strong class="text-[#1F1C18]">369.94</strong></span>
+            <span>5d: <strong class="text-[#1B6B45]">+0.72%</strong></span>
           </div>
-          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="GLD ETF selling pressure (-1.18% | 5d: +0.68%)">
-            GLD ETF selling pressure (-1.18% | 5d: +0.68%)
+          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="GLD ETF selling pressure (-1.14% | 5d: +0.72%)">
+            GLD ETF selling pressure (-1.14% | 5d: +0.72%)
           </p>
           
         </div>
@@ -656,35 +665,28 @@
               <span class="mt-0.5 w-5 h-5 rounded-full bg-[#1F1C18] text-[#FAF6EE] font-mono text-xs font-semibold flex items-center justify-center shrink-0">
                 1
               </span>
-              <span>U.S. Q3 GDP growth expanding by a robust 3.4% and September Core PCE inflation printing in line at +0.3% reinforce expectations that the Federal Reserve will maintain higher interest rates for longer.</span>
+              <span>Falling 10‑year yields (‑1.25%) and a weakening DXY (‑0.02%) reduce the opportunity cost of holding non‑yielding gold, supporting a bullish stance.</span>
             </li>
             
             <li class="flex items-start gap-3 paper-inset rounded-lg p-3.5">
               <span class="mt-0.5 w-5 h-5 rounded-full bg-[#1F1C18] text-[#FAF6EE] font-mono text-xs font-semibold flex items-center justify-center shrink-0">
                 2
               </span>
-              <span>Hawkish messaging from the new Fed leadership under Kevin Warsh signals a bias toward keeping policy restrictive to quell lingering inflationary pressures, raising the opportunity cost of holding non-yielding bullion.</span>
+              <span>Robust Q3 GDP (+3.4%) and solid job market data keep the Fed on a hawkish footing, pressuring gold lower.</span>
             </li>
             
             <li class="flex items-start gap-3 paper-inset rounded-lg p-3.5">
               <span class="mt-0.5 w-5 h-5 rounded-full bg-[#1F1C18] text-[#FAF6EE] font-mono text-xs font-semibold flex items-center justify-center shrink-0">
                 3
               </span>
-              <span>The U.S. Dollar Index (DXY) holding steady above 102.00 increases the foreign-currency cost of gold, weighing directly on spot XAUUSD prices.</span>
+              <span>Core PCE is flat at forecast, offering no immediate inflation relief, which tempers bullish pressure.</span>
             </li>
             
             <li class="flex items-start gap-3 paper-inset rounded-lg p-3.5">
               <span class="mt-0.5 w-5 h-5 rounded-full bg-[#1F1C18] text-[#FAF6EE] font-mono text-xs font-semibold flex items-center justify-center shrink-0">
                 4
               </span>
-              <span>Easing geopolitical anxiety and declining oil prices have reduced safe-haven demand, reflected in softer CBOE Volatility Index (VIX) levels and institutional selling pressure across the GLD ETF.</span>
-            </li>
-            
-            <li class="flex items-start gap-3 paper-inset rounded-lg p-3.5">
-              <span class="mt-0.5 w-5 h-5 rounded-full bg-[#1F1C18] text-[#FAF6EE] font-mono text-xs font-semibold flex items-center justify-center shrink-0">
-                5
-              </span>
-              <span>COMEX Gold Futures (GC=F) have broken below key intraday supports, testing distribution zones near $4,000 as momentum shifts decisively in favor of sellers.</span>
+              <span>Geopolitical risk is low‑medium; oil price declines and no major escalation keep safe‑haven demand muted.</span>
             </li>
             
           </ol>
@@ -696,7 +698,7 @@
             Key Risk / Invalidation
           </div>
           <p class="text-xs sm:text-sm text-[#6E1A1A] leading-relaxed">
-            INVALIDATION RISK: An unexpected escalation in Middle East geopolitical tensions or a sharp, sudden collapse in U.S. 10Y yields below 4.85% could trigger safe-haven inflows and invalidate the current bearish distribution thesis.
+            Invalidation risk: A surprise dovish Fed pivot or a rapid spike in VIX could flip sentiment sharply toward gold.
           </p>
         </div>
         
@@ -713,7 +715,7 @@
           </div>
 
           <div class="paper-inset rounded-lg p-4 text-sm text-[#2C2621] leading-relaxed">
-            Gold is facing downward distribution as stronger-than-expected Q3 U.S. GDP growth of 3.4% and sticky September Core PCE inflation (rising 0.3%) reinforce the Federal Reserve&#39;s pause and Chairman Kevin Warsh&#39;s hawkish leaning. Although U.S. 10-year Treasury yields slipped slightly (-1.07% to 4.991%), resilient economic data, a steady U.S. Dollar Index (DXY above 102.00), and easing Middle East oil fears have curbed safe-haven demand, leading to ETF outflows in GLD and COMEX gold futures pulling back toward $4,000.
+            US Treasury yields and the Dollar Index are slipping, which is bullish for gold, but strong Q3 GDP growth and tight labor market data push the bias bearish. Geopolitical headlines are muted and ETF flows are slightly negative, leaving the market near flat.
           </div>
         </div>
 
@@ -725,62 +727,61 @@
           
           <div class="bg-[#FAF6EE] border border-[#E2D9C8] rounded-lg px-3.5 py-2.5">
             <div class="flex items-center justify-between text-xs">
-              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)</span>
+              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 1: Fed Policy, US 10Y Real Yields (^TNX) &amp; DXY</span>
               <div class="flex items-center gap-2 shrink-0 font-mono">
                 <span class="px-1.5 py-0.5 rounded bg-[#EAE3D5] text-[#4A433B] text-[11px]">40% Wt</span>
                 <span class="font-semibold px-2 py-0.5 rounded text-[11px]
-                  bg-[#FAEDED] text-[#A82828] border border-[#E8C3C3]
+                  bg-[#E6F2EC] text-[#1B6B45] border border-[#B8D9C8]
                   ">
-                  -23.7
+                  +27.7
                 </span>
               </div>
             </div>
-            <p class="text-xs text-[#5C5346] mt-1 leading-snug">The Federal Reserve&#39;s rate pause and hawkish commentary from leadership leaning toward higher-for-longer interest rates, combined with a resilient DXY above 102.00, create a robust bearish headwind for gold despite minor yield retracements.</p>
+            <p class="text-xs text-[#5C5346] mt-1 leading-snug">Yield decline and a slightly weaker dollar are bullish for gold, while Fed commentary remains neutral.</p>
           </div>
           
           <div class="bg-[#FAF6EE] border border-[#E2D9C8] rounded-lg px-3.5 py-2.5">
             <div class="flex items-center justify-between text-xs">
-              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)</span>
+              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 2: US Tier-1 Macro Data (CPI, Core PCE, NFP, GDP, ISM PMI)</span>
               <div class="flex items-center gap-2 shrink-0 font-mono">
                 <span class="px-1.5 py-0.5 rounded bg-[#EAE3D5] text-[#4A433B] text-[11px]">30% Wt</span>
                 <span class="font-semibold px-2 py-0.5 rounded text-[11px]
                   bg-[#FAEDED] text-[#A82828] border border-[#E8C3C3]
                   ">
-                  -62.4
+                  -37.8
                 </span>
               </div>
             </div>
-            <p class="text-xs text-[#5C5346] mt-1 leading-snug">Stronger-than-expected Q3 GDP growth of 3.4%, sticky September Core PCE inflation, and robust labor market data remove the urgency for aggressive Fed rate cuts, pressuring gold lower.</p>
+            <p class="text-xs text-[#5C5346] mt-1 leading-snug">Strong GDP growth and tight labor market data push the Fed hawkish, weighing on gold; core PCE is flat.</p>
           </div>
           
           <div class="bg-[#FAF6EE] border border-[#E2D9C8] rounded-lg px-3.5 py-2.5">
             <div class="flex items-center justify-between text-xs">
-              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 3: Geopolitical Risk, Tariffs, War Escalation &amp; Safe-Haven Flows (^VIX)</span>
+              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 3: Geopolitical Risk, Tariffs &amp; Safe-Haven Flows (^VIX)</span>
               <div class="flex items-center gap-2 shrink-0 font-mono">
                 <span class="px-1.5 py-0.5 rounded bg-[#EAE3D5] text-[#4A433B] text-[11px]">20% Wt</span>
                 <span class="font-semibold px-2 py-0.5 rounded text-[11px]
-                  bg-[#FAEDED] text-[#A82828] border border-[#E8C3C3]
+                  bg-[#E6F2EC] text-[#1B6B45] border border-[#B8D9C8]
                   ">
-                  -20.7
+                  +11.6
                 </span>
               </div>
             </div>
-            <p class="text-xs text-[#5C5346] mt-1 leading-snug">Diminishing oil prices and hopes for diplomacy over Middle East escalation have lowered safe-haven premiums, allowing the VIX to drift lower and removing a critical pillar of support for gold.</p>
+            <p class="text-xs text-[#5C5346] mt-1 leading-snug">Geopolitical headlines are muted and VIX is falling, limiting safe‑haven demand for gold.</p>
           </div>
           
           <div class="bg-[#FAF6EE] border border-[#E2D9C8] rounded-lg px-3.5 py-2.5">
             <div class="flex items-center justify-between text-xs">
-              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 4: Central Bank Gold Buying, COMEX Positioning &amp; ETF (GLD) Flows</span>
+              <span class="font-semibold text-[#1F1C18] truncate pr-2">Wedge 4: Central Bank Buying, COMEX &amp; GLD ETF Flows</span>
               <div class="flex items-center gap-2 shrink-0 font-mono">
                 <span class="px-1.5 py-0.5 rounded bg-[#EAE3D5] text-[#4A433B] text-[11px]">10% Wt</span>
                 <span class="font-semibold px-2 py-0.5 rounded text-[11px]
-                  bg-[#FAEDED] text-[#A82828] border border-[#E8C3C3]
-                  ">
-                  -22.2
+                  bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0]">
+                  +3.0
                 </span>
               </div>
             </div>
-            <p class="text-xs text-[#5C5346] mt-1 leading-snug">Western institutional participation has turned defensive, evidenced by net outflows in the SPDR Gold Trust (GLD) ETF and COMEX futures distribution toward the $4,000 psychological handle.</p>
+            <p class="text-xs text-[#5C5346] mt-1 leading-snug">GLD ETF is down 1.14% and no notable central bank buying reported, slightly bearish for gold.</p>
           </div>
           
         </div>
@@ -823,16 +824,16 @@
         </div>
         <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#EAE3D5] text-center text-xs">
           <div class="bg-[#E6F2EC] border border-[#B8D9C8] rounded-lg py-1.5">
-            <div class="text-[#1B6B45] font-mono font-bold">16.8%</div>
-            <div class="text-[11px] text-[#4A433B]">Bullish (3)</div>
+            <div class="text-[#1B6B45] font-mono font-bold">44.8%</div>
+            <div class="text-[11px] text-[#4A433B]">Bullish (7)</div>
           </div>
           <div class="bg-[#FAEDED] border border-[#E8C3C3] rounded-lg py-1.5">
-            <div class="text-[#A82828] font-mono font-bold">77.4%</div>
-            <div class="text-[11px] text-[#4A433B]">Bearish (13)</div>
+            <div class="text-[#A82828] font-mono font-bold">43.3%</div>
+            <div class="text-[11px] text-[#4A433B]">Bearish (7)</div>
           </div>
           <div class="bg-[#FBF3E0] border border-[#E6CFA0] rounded-lg py-1.5">
-            <div class="text-[#8A5A0E] font-mono font-bold">5.8%</div>
-            <div class="text-[11px] text-[#4A433B]">Neutral (2)</div>
+            <div class="text-[#8A5A0E] font-mono font-bold">11.9%</div>
+            <div class="text-[11px] text-[#4A433B]">Neutral (4)</div>
           </div>
         </div>
       </div>
@@ -879,75 +880,16 @@
                   
                     bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
                   ">
-                  <span class="text-sm leading-none">9<span class="text-[10px] font-normal">/10</span></span>
+                  <span class="text-sm leading-none">10<span class="text-[10px] font-normal">/10</span></span>
                 </div>
               </td>
 
               <td class="py-3.5 px-4 align-top font-mono text-xs">
                 <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">06:52 PM BST</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">08:48 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.7h ago
-                </span>
-                
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                
-                <a href="https://news.google.com/rss/articles/CBMidEFVX3lxTFA4ZXJvZXdxSXFlelNEd1cxSFdJVmVvQkxsX3IyY2szWmZMNTNKcUJBTllmTXdSb1BSZVVRZ3BNaElMMVpZUy02d095bl9TX1E1RmowbVdjaE9tS29ZX0ZudTZzMzdWU0NPX0Y2cERwNWZSVkdo0gF6QVVfeXFMUE5TSDFnZEdUUThvZnMtcG9mUnZ1OVVrejNSMFlZVlpHUHdmeFRjZWd0Y3ZmZkVteDFBT1BaV3ZKTVQzcGRSSzJEMk43WHB4d2tLQ210TXpFNU1zUmRpdWNENG8zQUtnbnpKRHdPRXhjenhxOWhJSmExdFE?oc=5" target="_blank" rel="noopener noreferrer"
-                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  Federal Reserve’s preferred measure of inflation rose slightly in September
-                </a>
-                
-                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
-                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    The Hill (via Google News (Fed / FOMC / US 10Y Yields))
-                  </span>
-                  <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 06:52 PM BST
-                  </span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center align-top">
-                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
-                  
-                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
-                  ">
-                  BEARISH GOLD
-                </span>
-              </td>
-
-              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Persistent inflationary ticks validate restrictive monetary settings, acting as a structural headwind for precious metals.
-              </td>
-            </tr>
-            
-            
-            
-            <tr class="hover:bg-[#FAF6EE] transition-colors">
-              <td class="py-3.5 px-3 text-center align-top">
-                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
-                  
-                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
-                  ">
-                  <span class="text-sm leading-none">9<span class="text-[10px] font-normal">/10</span></span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top font-mono text-xs">
-                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">08:18 PM BST</div>
-                
-                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  17m ago
+                  2m ago
                 </span>
                 
               </td>
@@ -970,7 +912,7 @@
                     CNBC Top Financial News
                   </span>
                   <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 08:18 PM BST
+                    29 Oct 2026, 08:48 PM BST
                   </span>
                 </div>
               </td>
@@ -985,7 +927,66 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Global central bank monetary policy holds steady, aligning with a broad risk-neutral stance for international bullion demand.
+                ECB hold reduces global rate pressure, supporting gold as a safe‑haven.
+              </td>
+            </tr>
+            
+            
+            
+            <tr class="hover:bg-[#FAF6EE] transition-colors">
+              <td class="py-3.5 px-3 text-center align-top">
+                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
+                  
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
+                  ">
+                  <span class="text-sm leading-none">9<span class="text-[10px] font-normal">/10</span></span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top font-mono text-xs">
+                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">08:28 PM BST</div>
+                
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
+                  22m ago
+                </span>
+                
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
+                  Wedge 3: Geopolitical Risk, Tariffs, War Escalation &amp; Safe-Haven Flows (^VIX)
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                
+                <a href="https://www.investing.com/news/commodities-news/oil-dips-as-traders-weigh-iran-diplomacy-against-renewed-strike-risks-4981275" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
+                  Oil falls as traders weigh Iran diplomacy against renewed strike risks
+                </a>
+                
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
+                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
+                    Investing.com Commodities &amp; Gold
+                  </span>
+                  <span class="font-mono text-[11px] text-[#786E60]">
+                    29 Oct 2026, 08:28 PM BST
+                  </span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
+                  
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
+                  ">
+                  BULLISH GOLD
+                </span>
+              </td>
+
+              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
+                Reduced oil tension eases risk premium, limiting safe‑haven demand for gold.
               </td>
             </tr>
             
@@ -1006,7 +1007,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">07:51 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  44m ago
+                  59m ago
                 </span>
                 
               </td>
@@ -1037,73 +1038,14 @@
               <td class="py-3.5 px-4 text-center align-top">
                 <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
                   
-                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
                   ">
-                  BEARISH GOLD
+                  BULLISH GOLD
                 </span>
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Perceptions that incoming leadership leans toward higher interest rates increase opportunity costs for gold holders.
-              </td>
-            </tr>
-            
-            
-            
-            <tr class="hover:bg-[#FAF6EE] transition-colors">
-              <td class="py-3.5 px-3 text-center align-top">
-                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
-                  
-                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
-                  ">
-                  <span class="text-sm leading-none">9<span class="text-[10px] font-normal">/10</span></span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top font-mono text-xs">
-                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">06:41 PM BST</div>
-                
-                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.9h ago
-                </span>
-                
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                
-                <a href="https://news.google.com/rss/articles/CBMikgFBVV95cUxPbm0yc2JmRUdMMXdCcEZnaEFNeVNQaXJDN1JKTDZHTFVna3h0YUFybHFIcGZuOFpjbVk5WUZvNEhkVFpXR3lyaVl6M2RrTEZFeGVUU05VSmVEeDdSaGZlV1BzOHB2ZEJmMUpubWtkM3RFQTRiUDdSaWxIZFVRcWQwWWlOZnE3bG9zbXlpSmtNcVdtUQ?oc=5" target="_blank" rel="noopener noreferrer"
-                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  The Fed&#39;s decision to hold interest rates steady helps Warsh deny Tehran a say over monetary policy
-                </a>
-                
-                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
-                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    Fortune (via Google News (Fed / FOMC / US 10Y Yields))
-                  </span>
-                  <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 06:41 PM BST
-                  </span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center align-top">
-                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
-                  
-                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
-                  ">
-                  BEARISH GOLD
-                </span>
-              </td>
-
-              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Policy independence combined with a steady rate posture underscores the absence of imminent monetary easing.
+                Warsh&#39;s ambiguous stance fuels uncertainty, nudging markets toward safe‑haven gold.
               </td>
             </tr>
             
@@ -1124,7 +1066,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">07:05 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.5h ago
+                  1.8h ago
                 </span>
                 
               </td>
@@ -1162,7 +1104,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Uncertainty surrounding central bank credibility typically introduces mild safe-haven hedging into physical gold.
+                Fed credibility doubts increase market uncertainty, favoring gold.
               </td>
             </tr>
             
@@ -1180,33 +1122,33 @@
 
               <td class="py-3.5 px-4 align-top font-mono text-xs">
                 <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">07:54 PM BST</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">06:52 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  41m ago
+                  2.0h ago
                 </span>
                 
               </td>
 
               <td class="py-3.5 px-4 align-top">
                 <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 3: Geopolitical Risk, Tariffs, War Escalation &amp; Safe-Haven Flows (^VIX)
+                  Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)
                 </div>
               </td>
 
               <td class="py-3.5 px-4 align-top">
                 
-                <a href="https://www.investing.com/news/commodities-news/us-oil-prices-fall-as-investors-gauge-risks-to-mideast-supply-4981268" target="_blank" rel="noopener noreferrer"
+                <a href="https://news.google.com/rss/articles/CBMidEFVX3lxTFA4ZXJvZXdxSXFlelNEd1cxSFdJVmVvQkxsX3IyY2szWmZMNTNKcUJBTllmTXdSb1BSZVVRZ3BNaElMMVpZUy02d095bl9TX1E1RmowbVdjaE9tS29ZX0ZudTZzMzdWU0NPX0Y2cERwNWZSVkdo0gF6QVVfeXFMUE5TSDFnZEdUUThvZnMtcG9mUnZ1OVVrejNSMFlZVlpHUHdmeFRjZWd0Y3ZmZkVteDFBT1BaV3ZKTVQzcGRSSzJEMk43WHB4d2tLQ210TXpFNU1zUmRpdWNENG8zQUtnbnpKRHdPRXhjenhxOWhJSmExdFE?oc=5" target="_blank" rel="noopener noreferrer"
                    class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  Oil falls as diplomacy hopes outweigh Middle East escalation fears
+                  Federal Reserve’s preferred measure of inflation rose slightly in September
                 </a>
                 
                 <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
                   <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    Investing.com Commodities &amp; Gold
+                    The Hill (via Google News (Fed / FOMC / US 10Y Yields))
                   </span>
                   <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 07:54 PM BST
+                    29 Oct 2026, 06:52 PM BST
                   </span>
                 </div>
               </td>
@@ -1221,7 +1163,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Lower oil prices and receding geopolitical tensions strip away risk premiums from precious metals.
+                Slight inflation uptick keeps pressure on the Fed to stay tight, hurting gold.
               </td>
             </tr>
             
@@ -1242,7 +1184,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">07:09 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.4h ago
+                  1.7h ago
                 </span>
                 
               </td>
@@ -1280,7 +1222,125 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                A resilient DXY trading firmly above 102.00 increases dollar-denominated bullion costs for international buyers.
+                Forecasted DXY strength would normally weigh on gold, but current DXY is slipping.
+              </td>
+            </tr>
+            
+            
+            
+            <tr class="hover:bg-[#FAF6EE] transition-colors">
+              <td class="py-3.5 px-3 text-center align-top">
+                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
+                  
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
+                  ">
+                  <span class="text-sm leading-none">9<span class="text-[10px] font-normal">/10</span></span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top font-mono text-xs">
+                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">06:41 PM BST</div>
+                
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
+                  2.2h ago
+                </span>
+                
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
+                  Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                
+                <a href="https://news.google.com/rss/articles/CBMikgFBVV95cUxPbm0yc2JmRUdMMXdCcEZnaEFNeVNQaXJDN1JKTDZHTFVna3h0YUFybHFIcGZuOFpjbVk5WUZvNEhkVFpXR3lyaVl6M2RrTEZFeGVUU05VSmVEeDdSaGZlV1BzOHB2ZEJmMUpubWtkM3RFQTRiUDdSaWxIZFVRcWQwWWlOZnE3bG9zbXlpSmtNcVdtUQ?oc=5" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
+                  The Fed&#39;s decision to hold interest rates steady helps Warsh deny Tehran a say over monetary policy
+                </a>
+                
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
+                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
+                    Fortune (via Google News (Fed / FOMC / US 10Y Yields))
+                  </span>
+                  <span class="font-mono text-[11px] text-[#786E60]">
+                    29 Oct 2026, 06:41 PM BST
+                  </span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
+                  
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
+                  ">
+                  BULLISH GOLD
+                </span>
+              </td>
+
+              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
+                Rate hold adds uncertainty about future hikes, nudging investors toward gold.
+              </td>
+            </tr>
+            
+            
+            
+            <tr class="hover:bg-[#FAF6EE] transition-colors">
+              <td class="py-3.5 px-3 text-center align-top">
+                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
+                  
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
+                  ">
+                  <span class="text-sm leading-none">9<span class="text-[10px] font-normal">/10</span></span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top font-mono text-xs">
+                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">07:54 PM BST</div>
+                
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
+                  56m ago
+                </span>
+                
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
+                  Wedge 3: Geopolitical Risk, Tariffs, War Escalation &amp; Safe-Haven Flows (^VIX)
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                
+                <a href="https://www.investing.com/news/commodities-news/us-oil-prices-fall-as-investors-gauge-risks-to-mideast-supply-4981268" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
+                  Oil falls as diplomacy hopes outweigh Middle East escalation fears
+                </a>
+                
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
+                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
+                    Investing.com Commodities &amp; Gold
+                  </span>
+                  <span class="font-mono text-[11px] text-[#786E60]">
+                    29 Oct 2026, 07:54 PM BST
+                  </span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
+                  
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
+                  ">
+                  BULLISH GOLD
+                </span>
+              </td>
+
+              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
+                Lower geopolitical tension reduces safe‑haven buying pressure on gold.
               </td>
             </tr>
             
@@ -1301,7 +1361,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">08:11 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  24m ago
+                  39m ago
                 </span>
                 
               </td>
@@ -1339,7 +1399,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Robust economic growth and accelerating inflation eliminate pressure on the Fed to cut rates quickly, raising real yields and hurting non-yielding gold.
+                Strong GDP growth pushes expectations of a tighter monetary stance, hurting gold.
               </td>
             </tr>
             
@@ -1360,7 +1420,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">08:00 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  34m ago
+                  49m ago
                 </span>
                 
               </td>
@@ -1398,66 +1458,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Strong GDP performance dampens recession fears, reducing the appeal of defensive gold safe-haven allocations.
-              </td>
-            </tr>
-            
-            
-            
-            <tr class="hover:bg-[#FAF6EE] transition-colors">
-              <td class="py-3.5 px-3 text-center align-top">
-                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
-                  
-                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
-                  ">
-                  <span class="text-sm leading-none">8<span class="text-[10px] font-normal">/10</span></span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top font-mono text-xs">
-                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">06:36 PM BST</div>
-                
-                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  2.0h ago
-                </span>
-                
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                
-                <a href="https://www.investing.com/news/economic-indicators/us-initial-jobless-claims-fall-to-194k-beating-expectations-93CH-4983528" target="_blank" rel="noopener noreferrer"
-                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  U.S. Initial Jobless Claims Fall to 194K, Beating Expectations
-                </a>
-                
-                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
-                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    Investing.com Economic Indicators
-                  </span>
-                  <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 06:36 PM BST
-                  </span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center align-top">
-                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
-                  
-                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
-                  ">
-                  BEARISH GOLD
-                </span>
-              </td>
-
-              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Jobless claims dropping below expectations confirms ongoing economic resilience, undermining the case for safe-haven gold buying.
+                Robust growth reinforces expectations of higher rates, pressuring gold.
               </td>
             </tr>
             
@@ -1478,7 +1479,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">07:03 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.5h ago
+                  1.8h ago
                 </span>
                 
               </td>
@@ -1516,7 +1517,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Accelerating growth and rising core PCE directly catalyze spot gold liquidation toward the $4,000 psychological level.
+                Higher core PCE and faster growth push gold lower.
               </td>
             </tr>
             
@@ -1537,7 +1538,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">07:00 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.6h ago
+                  1.8h ago
                 </span>
                 
               </td>
@@ -1575,66 +1576,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Historic labor market strength refutes recession narratives, driving capital away from non-yielding safe-haven assets.
-              </td>
-            </tr>
-            
-            
-            
-            <tr class="hover:bg-[#FAF6EE] transition-colors">
-              <td class="py-3.5 px-3 text-center align-top">
-                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
-                  
-                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
-                  ">
-                  <span class="text-sm leading-none">8<span class="text-[10px] font-normal">/10</span></span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top font-mono text-xs">
-                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">08:07 PM BST</div>
-                
-                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  27m ago
-                </span>
-                
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                
-                <a href="https://news.google.com/rss/articles/CBMizAFBVV95cUxPMHZxUndOblBVN1I2M3NXejBiNjFUMjVVc09KUWpkbHAzR3FZM1VJVEtackZtcDBXQ1NrRWFaWTJWLXhxX3BYVjBZR3Y1dUtGNzR3LVBSS2ZrTjlELUhDWlhCSnZ0TG9lSHVDNk1rc3VpSEEySGZ3ZmFoRm1rQTNkNTBCb2U5ZWptSVpvMlZ6cGo4SkVzTXAwZ09GSEhQVEJlakt3WVk5NHE0cjlreVFFajQ1NU9MY09pdnBnM0N6cE9vbTZRZlhJaDg2TGk?oc=5" target="_blank" rel="noopener noreferrer"
-                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  September US Core PCE Price Index Rises 0.3% Vs. Expected 0.3% Gain, Prior 0.3% Gain
-                </a>
-                
-                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
-                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    marketscreener.com (via Google News (US CPI / NFP / Core PCE / DXY))
-                  </span>
-                  <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 08:07 PM BST
-                  </span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center align-top">
-                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
-                  
-                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
-                  ">
-                  BEARISH GOLD
-                </span>
-              </td>
-
-              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Sticky core inflation prints confirm pricing pressures remain persistent, supporting a higher-for-longer monetary policy stance.
+                Very low jobless claims signal a strong labor market, supporting a hawkish Fed.
               </td>
             </tr>
             
@@ -1655,7 +1597,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">06:59 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.6h ago
+                  1.8h ago
                 </span>
                 
               </td>
@@ -1693,66 +1635,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Warnings that the Fed may need to implement further policy tightening to control inflation reinforce elevated yield environments.
-              </td>
-            </tr>
-            
-            
-            
-            <tr class="hover:bg-[#FAF6EE] transition-colors">
-              <td class="py-3.5 px-3 text-center align-top">
-                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
-                  
-                    bg-[#F0EAE0] text-[#1F1C18] border-[#D5CBB8]
-                  ">
-                  <span class="text-sm leading-none">5<span class="text-[10px] font-normal">/10</span></span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top font-mono text-xs">
-                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">07:01 PM BST</div>
-                
-                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.6h ago
-                </span>
-                
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 4: Central Bank Gold Buying, COMEX Positioning &amp; ETF (GLD) Flows
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 align-top">
-                
-                <a href="https://news.google.com/rss/articles/CBMiiwJBVV95cUxOTTZCSXFBcXNBeXRsTFpqQ2laR0JBMGpqUmNTR1BNYUl0THpOMXhxdHk1LWYyVDZjV3BPbFhwWXk5cl9tX1Q4MVBKTmNGUWhKQXFKNGg1bGVRY3pFY19NZTltZEI3X1ZXR1NySlJRQXhtMDZFdnpKeGo2REx2R2p5VkZHby1KczhuY1JVUXpZUGNNZlZUZHVoRnpHYkpFa3V1b0tRWFN6MG1hb0ZFeXlmNk5GdVE4WmVCc3FEQkdGX2RwMU90TUhKaS0yTjdIWE9iU0ljTDUyUEkzWWYxN1g3aThOT3RJTFBFRENHN2lzeW9xMnNvUW1JQV92MnBHYkV0OEZFWHEtbG1TYTjSAZACQVVfeXFMT0FRQTN1X3hzbUlGa1lQNGxsTVZianYyMEdncU1qdFJSNWYweHZONE1vN18wNzMxUkRsYVVwVFhDZEJLV0duckNKd2JSa2hLMnlyRjBpNUhBRnhDZGZmamg0Z3VPZjBMQWl3blF6VEo5RE8tQktXYVA1U2xzWEhIb2NkVS1MeUpDRXBaNWROSVplTmNFd2MtaDRfV0JlQ2pVcnRhdnpnQ2xMZ1dsTVJmbzdDY1JpVVp4OEI0Q3BuV05xaFAxT0wxclVnSGtsM0ZPaWRhWVk3YW1TUTdoQzI2TDhZUUtIOXA5N0hqd0o2TnJiOS1LY00ybFgxdlhvU2o5WWcxNElMc05reTNzLTFORjE?oc=5" target="_blank" rel="noopener noreferrer"
-                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  Gold price, silver rate today: Why are gold rate, silver price down on Thursday? What to expect in November
-                </a>
-                
-                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
-                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    The Economic Times (via Google News (Gold / XAUUSD / COMEX))
-                  </span>
-                  <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 07:01 PM BST
-                  </span>
-                </div>
-              </td>
-
-              <td class="py-3.5 px-4 text-center align-top">
-                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
-                  
-                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
-                  ">
-                  BEARISH GOLD
-                </span>
-              </td>
-
-              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Retail and institutional commentary highlights current downward momentum across COMEX futures and physical holdings.
+                Fed may need to tighten further, which is negative for gold.
               </td>
             </tr>
             
@@ -1773,7 +1656,7 @@
                 <div class="text-[#9A6B16] font-medium mt-0.5">06:46 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.8h ago
+                  2.1h ago
                 </span>
                 
               </td>
@@ -1811,7 +1694,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Local retail physical premiums in specific emerging markets reflect localized currency devaluation hedges.
+                Local market price increase reflects regional demand, modestly supportive.
               </td>
             </tr>
             
@@ -1829,33 +1712,33 @@
 
               <td class="py-3.5 px-4 align-top font-mono text-xs">
                 <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">07:46 PM BST</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">08:07 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  49m ago
+                  42m ago
                 </span>
                 
               </td>
 
               <td class="py-3.5 px-4 align-top">
                 <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)
+                  Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
                 </div>
               </td>
 
               <td class="py-3.5 px-4 align-top">
                 
-                <a href="https://news.google.com/rss/articles/CBMiwwFBVV95cUxPTWx1V0xEZ3F6SmFpQll1Snd4cF82cVFjU1FQZVVzbV91aFRZNTZhdG93WnFmaFppWkh2QThDMUlJTGNEaUNOdHA1TWJYQ0JOanVOT3pBRVNFZGJUOTBkUmpOVHhpaldFOGctNzlVRTNuTFVfMkZ2Qi1ueGxQc0xCbkxSRUM4YUVTcGVBNDY5OG95LS1nR1JxWEhPcGp1TndiVEdrWjhqMHR2WVhaZXZkZzhQM1prSjM4eGtSUkdnS21JRWs?oc=5" target="_blank" rel="noopener noreferrer"
+                <a href="https://news.google.com/rss/articles/CBMizAFBVV95cUxPMHZxUndOblBVN1I2M3NXejBiNjFUMjVVc09KUWpkbHAzR3FZM1VJVEtackZtcDBXQ1NrRWFaWTJWLXhxX3BYVjBZR3Y1dUtGNzR3LVBSS2ZrTjlELUhDWlhCSnZ0TG9lSHVDNk1rc3VpSEEySGZ3ZmFoRm1rQTNkNTBCb2U5ZWptSVpvMlZ6cGo4SkVzTXAwZ09GSEhQVEJlakt3WVk5NHE0cjlreVFFajQ1NU9MY09pdnBnM0N6cE9vbTZRZlhJaDg2TGk?oc=5" target="_blank" rel="noopener noreferrer"
                    class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  Federal Reserve pauses federal funds rate after first increase in more than three years
+                  September US Core PCE Price Index Rises 0.3% Vs. Expected 0.3% Gain, Prior 0.3% Gain
                 </a>
                 
                 <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
                   <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    Logistics Management (via Google News (Fed / FOMC / US 10Y Yields))
+                    marketscreener.com (via Google News (US CPI / NFP / Core PCE / DXY))
                   </span>
                   <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 07:46 PM BST
+                    29 Oct 2026, 08:07 PM BST
                   </span>
                 </div>
               </td>
@@ -1870,7 +1753,7 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                A widely anticipated policy pause is already priced into the metals complex, limiting immediate directional surprise.
+                Core PCE matches forecast, offering no new inflationary pressure for gold.
               </td>
             </tr>
             
@@ -1888,33 +1771,33 @@
 
               <td class="py-3.5 px-4 align-top font-mono text-xs">
                 <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
-                <div class="text-[#9A6B16] font-medium mt-0.5">07:00 PM BST</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">06:36 PM BST</div>
                 
                 <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
-                  1.6h ago
+                  2.2h ago
                 </span>
                 
               </td>
 
               <td class="py-3.5 px-4 align-top">
                 <div class="text-xs font-semibold text-[#5C5346] leading-snug">
-                  Wedge 1: Fed/FOMC Policy, US 10Y Yield (^TNX) &amp; US Dollar (DXY)
+                  Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
                 </div>
               </td>
 
               <td class="py-3.5 px-4 align-top">
                 
-                <a href="https://news.google.com/rss/articles/CBMiZ0FVX3lxTE4ybFFpc2tENmV6YWdvMWZlTWVTbzRaWjJySXJMZEt3Zm1xYjBOclhXU0RHR0ItMDl3bUpNTFQtVFpFVE0zcjZwLTUxdWE4LURSSHVLQm1WVlVhRlBpWWJLcTd1ZzctdGc?oc=5" target="_blank" rel="noopener noreferrer"
+                <a href="https://www.investing.com/news/economic-indicators/us-initial-jobless-claims-fall-to-194k-beating-expectations-93CH-4983528" target="_blank" rel="noopener noreferrer"
                    class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
-                  Harvey Flax on what to expect from October Fed rate decision
+                  U.S. Initial Jobless Claims Fall to 194K, Beating Expectations
                 </a>
                 
                 <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
                   <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
-                    qz.com (via Google News (Fed / FOMC / US 10Y Yields))
+                    Investing.com Economic Indicators
                   </span>
                   <span class="font-mono text-[11px] text-[#786E60]">
-                    29 Oct 2026, 07:00 PM BST
+                    29 Oct 2026, 06:36 PM BST
                   </span>
                 </div>
               </td>
@@ -1929,7 +1812,125 @@
               </td>
 
               <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
-                Pre-decision commentary adds to market consolidation without providing new directional trading catalysts.
+                US macroeconomic release tracked for deviations against consensus that shift Fed rate expectations.
+              </td>
+            </tr>
+            
+            
+            
+            <tr class="hover:bg-[#FAF6EE] transition-colors">
+              <td class="py-3.5 px-3 text-center align-top">
+                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
+                  
+                    bg-[#FAF6EE] text-[#655D52] border-[#E2D9C8]
+                  ">
+                  <span class="text-sm leading-none">4<span class="text-[10px] font-normal">/10</span></span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top font-mono text-xs">
+                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">06:34 PM BST</div>
+                
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
+                  2.3h ago
+                </span>
+                
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
+                  Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                
+                <a href="https://news.google.com/rss/articles/CBMiyAFBVV95cUxNV2NTOHJxQl84dEZqdDBHcmJQRG9jRWNhV3ZRWmRQVU9sRFF2VnlSNGt5VjNoZWxkU19QdnlGdDl6MGMzTWF3eDVSSERSX05OOHlaLTcxNk9CRnhlcENtUjZZSlU5c0lVX3A4ZV92bW5ScmQxdGl4ZG9CMUtib1FLRzZfZG9YNHVjZ0RiRExYdVZRVTZMNVJSZElWMXpnZDVUaXJka0NMelJUNVVrRDNtazkyREIxRy1nTHBoRlg2NTlfTG1RMTN4Rw?oc=5" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
+                  Core PCE Price Index Steady, Matches Forecast Amid Inflation Watch
+                </a>
+                
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
+                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
+                    Investing.com (via Google News (US CPI / NFP / Core PCE / DXY))
+                  </span>
+                  <span class="font-mono text-[11px] text-[#786E60]">
+                    29 Oct 2026, 06:34 PM BST
+                  </span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
+                  
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
+                  ">
+                  NEUTRAL
+                </span>
+              </td>
+
+              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
+                US macroeconomic release tracked for deviations against consensus that shift Fed rate expectations.
+              </td>
+            </tr>
+            
+            
+            
+            <tr class="hover:bg-[#FAF6EE] transition-colors">
+              <td class="py-3.5 px-3 text-center align-top">
+                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
+                  
+                    bg-[#FAF6EE] text-[#655D52] border-[#E2D9C8]
+                  ">
+                  <span class="text-sm leading-none">4<span class="text-[10px] font-normal">/10</span></span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top font-mono text-xs">
+                <div class="font-semibold text-[#1F1C18]">29 Oct 2026</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">06:34 PM BST</div>
+                
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
+                  2.3h ago
+                </span>
+                
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
+                  Wedge 2: US Tier-1 Economic Data (CPI, Core PCE, NFP, GDP, ISM PMI)
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                
+                <a href="https://www.investing.com/news/economic-indicators/us-gdp-growth-surpasses-expectations-boosts-economic-outlook-93CH-4983512" target="_blank" rel="noopener noreferrer"
+                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
+                  U.S. GDP Growth Surpasses Expectations, Boosts Economic Outlook
+                </a>
+                
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
+                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
+                    Investing.com Economic Indicators
+                  </span>
+                  <span class="font-mono text-[11px] text-[#786E60]">
+                    29 Oct 2026, 06:34 PM BST
+                  </span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
+                  
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
+                  ">
+                  NEUTRAL
+                </span>
+              </td>
+
+              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
+                US macroeconomic release tracked for deviations against consensus that shift Fed rate expectations.
               </td>
             </tr>
             
@@ -3313,7 +3314,7 @@
                   
                     bg-[#EDF3F8] text-[#2B547E] border-[#C2D6E8]
                   ">
-                  UPCOMING (+1.1d)
+                  UPCOMING (+1.0d)
                 </span>
               </td>
 
@@ -3509,8 +3510,8 @@
   <!-- ===================================================================== -->
   <script>
     (function() {
-      const wedgeData = {"labels": ["Wedge 1: Fed/FOMC Policy, US 10Y Yield (40%)", "Wedge 2: US Tier-1 Economic Data (30%)", "Wedge 3: Geopolitical Risk, Tariffs, War\u2026 (20%)", "Wedge 4: Central Bank Gold Buying, COMEX\u2026 (10%)"], "scores": [-23.7, -62.4, -20.7, -22.2], "bgColors": ["rgba(168, 40, 40, 0.78)", "rgba(168, 40, 40, 0.78)", "rgba(168, 40, 40, 0.78)", "rgba(168, 40, 40, 0.78)"], "borderColors": ["#A82828", "#A82828", "#A82828", "#A82828"]};
-      const doughnutData = {"labels": ["Bullish (3 stories | 16.8%)", "Bearish (13 stories | 77.4%)", "Neutral (2 stories | 5.8%)"], "weights": [23, 106, 8], "counts": [3, 13, 2]};
+      const wedgeData = {"labels": ["Wedge 1: Fed Policy, US 10Y Real Yields (40%)", "Wedge 2: US Tier-1 Macro Data (30%)", "Wedge 3: Geopolitical Risk, Tariffs & Sa\u2026 (20%)", "Wedge 4: Central Bank Buying, COMEX & GL\u2026 (10%)"], "scores": [27.7, -37.8, 11.6, 3.0], "bgColors": ["rgba(27, 107, 69, 0.78)", "rgba(168, 40, 40, 0.78)", "rgba(27, 107, 69, 0.78)", "rgba(180, 123, 28, 0.78)"], "borderColors": ["#1B6B45", "#A82828", "#1B6B45", "#B47B1C"]};
+      const doughnutData = {"labels": ["Bullish (7 stories | 44.8%)", "Bearish (7 stories | 43.3%)", "Neutral (4 stories | 11.9%)"], "weights": [60, 58, 16], "counts": [7, 7, 4]};
       const initialPortalAuth = {"admin": {"username": "arnob", "password": "arnob69", "display_name": "Arnob (Administrator)", "role": "admin", "active": true, "created_at": "29 Oct 2026, 06:00 AM BST"}, "users": []};
 
       const STORAGE_USERS_KEY = 'xauusd_portal_code_users_v2';
