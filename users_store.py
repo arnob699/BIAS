@@ -5,53 +5,39 @@ All user accounts and the single Administrator account are stored directly insid
 this Python source file (`ADMIN_ACCOUNT` and `USERS_LIST`) so that NO external
 database (no SQLite, PostgreSQL, or MongoDB) is ever required.
 
-When the Administrator creates, toggles, or deletes a user from the web dashboard,
-`save_users_to_code()` rewrites this module's `USERS_LIST` definition in-place.
+When the Administrator (`arnob`) manually registers, toggles, or deletes a user from
+the web dashboard, `_persist_users_list_to_source_file()` rewrites this module's
+`USERS_LIST` definition in-place.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+BST_TZ = timezone(timedelta(hours=6), name='BST')
 from pathlib import Path
-import pprint
 import threading
 from typing import Any, Dict, List, Optional
 
 _STORE_LOCK = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Single Administrator Account (Full Access + User Creation Privileges)
+# Single Administrator Account (Full Access + Manual User Registration)
 # ---------------------------------------------------------------------------
 ADMIN_ACCOUNT: Dict[str, Any] = {
-    "username": "admin",
-    "password": "admin123",
-    "display_name": "Administrator (Precious Metals Desk Lead)",
+    "username": "arnob",
+    "password": "arnob69",
+    "display_name": "Arnob (Administrator)",
     "role": "admin",
     "active": True,
-    "created_at": "2026-10-28 00:00 UTC",
+    "created_at": "29 Oct 2026, 06:00 AM BST",
 }
 
 # ---------------------------------------------------------------------------
-# Code-Persisted Multi-User List (Managed by Administrator via Web UI)
+# Code-Persisted Multi-User List (Registered Manually by Admin via Web UI)
 # ---------------------------------------------------------------------------
 # BEGIN_USERS_LIST
 USERS_LIST: List[Dict[str, Any]] = [
-    {
-        "username": 'trader1',
-        "password": 'gold123',
-        "display_name": 'XAUUSD Senior Execution Trader',
-        "role": "user",
-        "active": True,
-        "created_at": '2026-10-28 12:00 UTC',
-    },
-    {
-        "username": 'analyst1',
-        "password": 'macro123',
-        "display_name": 'COMEX GC=F Macro Analyst',
-        "role": "user",
-        "active": True,
-        "created_at": '2026-10-28 12:05 UTC',
-    },
 ]
 # END_USERS_LIST
 
@@ -111,7 +97,8 @@ def authenticate_account(username: str, password: str) -> Optional[Dict[str, Any
 def _persist_users_list_to_source_file() -> None:
     """
     Rewrite the `# BEGIN_USERS_LIST ... # END_USERS_LIST` block directly inside
-    `users_store.py` so that all created/updated users are permanently saved in code.
+    `users_store.py` so that all manually registered/updated users are permanently
+    saved in code.
     """
     file_path = Path(__file__).resolve()
     source_text = file_path.read_text(encoding="utf-8")
@@ -155,8 +142,8 @@ def admin_create_or_update_user(
     active: bool = True,
 ) -> Dict[str, Any]:
     """
-    Create a new user (or update an existing user) and save directly into `users_store.py`.
-    Cannot overwrite the single `admin` account username.
+    Manually register a new user (or update an existing user) and save directly
+    into `users_store.py`. Cannot overwrite the single Administrator username.
     """
     clean_user = (username or "").strip()
     clean_pass = (password or "").strip()
@@ -167,9 +154,11 @@ def admin_create_or_update_user(
     if not clean_pass or len(clean_pass) < 3:
         raise ValueError("Password must be at least 3 characters.")
     if clean_user.lower() == ADMIN_ACCOUNT["username"].lower():
-        raise ValueError("Cannot overwrite the single Administrator username ('admin').")
+        raise ValueError(
+            f"Cannot overwrite the single Administrator username ('{ADMIN_ACCOUNT['username']}')."
+        )
 
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now_str = datetime.now(BST_TZ).strftime("%d %b %Y, %I:%M %p BST")
 
     with _STORE_LOCK:
         for existing in USERS_LIST:
