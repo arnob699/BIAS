@@ -45,7 +45,7 @@ from config import (
 logger = logging.getLogger(__name__)
 
 # Cache Gemini daily Free-Tier exhaustion so repeated refreshes skip straight to Groq in 0ms
-_GEMINI_DAILY_QUOTA_EXHAUSTED: bool = False
+_EXHAUSTED_GEMINI_MODELS: set = set()
 
 
 # ---------------------------------------------------------------------------
@@ -199,8 +199,9 @@ _BULLISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
     "geopolitical concerns": (+65, "Rising geopolitical concerns stimulate defensive safe-haven bids in bullion and commodities."),
     "central bank": (+55, "Sovereign central bank reserve diversification provides price-inelastic physical floor support under XAUUSD."),
     "gold reserves": (+60, "Official sector bullion accumulation tightens physical supply and supports structural Gold upside."),
-    "unemployment": (+55, "Labor market softening increases probability of Fed easing, pressuring real yields and lifting Gold."),
-    "jobless claims": (+50, "Rising jobless claims signal cooling US labor demand, pulling forward Fed rate-cut expectations for XAUUSD."),
+    "unemployment rises": (+55, "Labor market softening increases probability of Fed easing, pressuring real yields and lifting Gold."),
+    "rising jobless claims": (+50, "Rising jobless claims signal cooling US labor demand, pulling forward Fed rate-cut expectations for XAUUSD."),
+    "jobless claims rise": (+50, "Rising jobless claims signal cooling US labor demand, pulling forward Fed rate-cut expectations for XAUUSD."),
     "stagflation": (+80, "Stagflationary macro dynamics (sticky inflation + slowing growth) represent the strongest historical regime for Gold."),
     "recession": (+70, "Recessionary tail-risk drives defensive allocation into Gold and compresses front-end Treasury yields."),
     "gold rallies": (+55, "Strong upside momentum in spot XAUUSD attracts systematic trend-following inflows."),
@@ -208,6 +209,23 @@ _BULLISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
     "gold climbs": (+45, "Sustained buying interest lifts COMEX Gold futures alongside supportive macro flows."),
     "record high": (+65, "Breakout to record highs reinforces structural bullish momentum in XAUUSD."),
     "inflows": (+50, "Bullion ETF inflows confirm institutional real-money accumulation of physical Gold."),
+    "gold rises": (+50, "Spot XAUUSD strength reflects active institutional buying and supportive macro flows."),
+    "gold gains": (+50, "Upside gains in Gold futures signal constructive bullion demand."),
+    "gold edges higher": (+40, "Gradual upside in XAUUSD reflects steady dip-buying support."),
+    "gold rebounds": (+55, "Rebound in Gold prices highlights resilient underlying safe-haven and dip-buying demand."),
+    "gold steadies": (+20, "Stabilizing XAUUSD price action shows buyers defending key intraday support."),
+    "gold holds": (+25, "Resilient Gold consolidation near highs signals firm underlying physical and macro support."),
+    "rate cuts": (+60, "Expectations for Federal Reserve rate cuts compress real Treasury yields and boost XAUUSD."),
+    "cut rates": (+60, "Anticipation of central bank rate cuts lowers the opportunity cost of holding non-yielding Gold."),
+    "yields drop": (+60, "Dropping US Treasury yields reduce real-rate headwinds and lift Gold."),
+    "yields slip": (+50, "Slipping Treasury yields provide a constructive tailwind for XAUUSD."),
+    "dollar slips": (+50, "A softer US Dollar boosts international purchasing power for USD-denominated Gold."),
+    "dollar falls": (+55, "Weakening DXY directly supports upside in XAUUSD and COMEX GC=F."),
+    "weaker dollar": (+55, "A weaker US Dollar reduces headwinds for bullion and attracts macro inflows."),
+    "softer dollar": (+50, "Softer USD trading supports precious metals valuations."),
+    "inflation cools": (+60, "Cooling inflation strengthens the case for Fed easing and lower real yields, lifting Gold."),
+    "uncertainty": (+45, "Macro and policy uncertainty reinforces defensive allocation into physical Gold."),
+    "bullish": (+50, "Bullish institutional positioning supports upside momentum in XAUUSD."),
 }
 
 _BEARISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
@@ -340,20 +358,20 @@ def _score_headline_deterministically(item: Dict[str, Any]) -> GoldHeadlineAnaly
             impact_weight = max(impact_weight, 9)
         mechanism = mechanisms[0]
     else:
-        # Conservative default inference by wedge context (never artificially inflate to +65/+30)
+        # Neutral baseline when no explicit bullish/bearish cue phrase matched (do not force negative bias)
         if w_id == 1:
-            avg_score = -25
-            mechanism = "Elevated US yields and cautious Fed policy keep real-rate opportunity costs in focus for XAUUSD."
+            avg_score = 0
+            mechanism = "Federal Reserve, Treasury yield, and US Dollar commentary monitored for next directional real-rate impulse in XAUUSD."
         elif w_id == 2:
-            avg_score = -15
-            mechanism = "Sticky US inflation and macro expectations keep Fed rate-cut timing cautious for Gold."
+            avg_score = 0
+            mechanism = "US macroeconomic release tracked for deviations against consensus that shift Fed rate expectations."
         elif w_id == 3:
             avg_score = +20
-            mechanism = "Ongoing geopolitical headlines maintain a modest safe-haven floor under Gold."
+            mechanism = "Ongoing geopolitical and trade developments maintain a supportive safe-haven floor under Gold."
         else:
             avg_score = 0
             impact_weight = min(impact_weight, 4)
-            mechanism = "Neutral precious metals positioning with no immediate directional catalyst."
+            mechanism = "Balanced precious metals positioning with two-way institutional flow."
 
     avg_score = max(-100, min(100, avg_score))
     if avg_score >= 15:
@@ -421,35 +439,40 @@ def build_deterministic_gold_analysis(payload: Dict[str, Any]) -> Dict[str, Any]
         den = sum(w for _, w in pairs)
         return round(num / max(den, 1), 1)
 
-    # Compute live market adjustments for each wedge
-    # Wedge 1 (40%): Inverse DXY & 10Y Yield + Wedge 1 news
+    # Compute live market adjustments for each wedge based on actual intraday moves (no permanent bearish penalty)
     macro_w1_score = 0.0
-    if tnx_price >= 4.50:
-        macro_w1_score -= 25.0
-    if tnx_chg > 0.25:
+    if tnx_chg >= 0.60:
+        macro_w1_score -= 35.0
+    elif tnx_chg >= 0.20:
         macro_w1_score -= 20.0
-    elif tnx_chg < -0.25:
-        macro_w1_score += 25.0
-
-    if dxy_chg > 0.15:
-        macro_w1_score -= 20.0
-    elif dxy_chg < -0.15:
+    elif tnx_chg <= -0.60:
+        macro_w1_score += 35.0
+    elif tnx_chg <= -0.20:
         macro_w1_score += 20.0
 
-    w1_news = _weighted_news_avg(wedge_headline_scores[1], -15.0)
-    w1_score = max(-100.0, min(100.0, round(0.55 * macro_w1_score + 0.45 * w1_news, 1)))
+    if dxy_chg >= 0.35:
+        macro_w1_score -= 30.0
+    elif dxy_chg >= 0.12:
+        macro_w1_score -= 15.0
+    elif dxy_chg <= -0.35:
+        macro_w1_score += 30.0
+    elif dxy_chg <= -0.12:
+        macro_w1_score += 15.0
+
+    w1_news = _weighted_news_avg(wedge_headline_scores[1], 0.0)
+    w1_score = max(-100.0, min(100.0, round(0.50 * macro_w1_score + 0.50 * w1_news, 1)))
 
     # Wedge 2 (30%): US Tier-1 Economic Data
-    w2_score = max(-100.0, min(100.0, _weighted_news_avg(wedge_headline_scores[2], 10.0)))
+    w2_score = max(-100.0, min(100.0, _weighted_news_avg(wedge_headline_scores[2], 0.0)))
 
     # Wedge 3 (20%): Geopolitical Risk & Safe-Haven (^VIX)
-    vix_bonus = 25.0 if vix_price >= 20.0 else (10.0 if vix_price >= 17.0 else -10.0)
-    w3_news = _weighted_news_avg(wedge_headline_scores[3], 45.0)
+    vix_bonus = 25.0 if vix_price >= 20.0 else (10.0 if vix_price >= 16.0 else 0.0)
+    w3_news = _weighted_news_avg(wedge_headline_scores[3], 25.0)
     w3_score = max(-100.0, min(100.0, round(0.35 * vix_bonus + 0.65 * w3_news, 1)))
 
     # Wedge 4 (10%): Central Bank Buying, COMEX & GLD ETF flows
-    flow_bonus = 35.0 if (gc_chg > 0.2 or gld_chg > 0.2) else (-35.0 if (gc_chg < -0.2 or gld_chg < -0.2) else 15.0)
-    w4_news = _weighted_news_avg(wedge_headline_scores[4], 25.0)
+    flow_bonus = 30.0 if (gc_chg > 0.25 or gld_chg > 0.25) else (-25.0 if (gc_chg < -0.50 and gld_chg < -0.50) else 10.0)
+    w4_news = _weighted_news_avg(wedge_headline_scores[4], 15.0)
     w4_score = max(-100.0, min(100.0, round(0.50 * flow_bonus + 0.50 * w4_news, 1)))
 
     # Composite Weighted Sentiment Score (40% W1 + 30% W2 + 20% W3 + 10% W4)
@@ -630,17 +653,15 @@ def _reconcile_and_validate_analysis(
             wedge_cat = raw_ref["gold_wedge"]["wedge_name"]
             n["gold_wedge_category"] = wedge_cat
 
-        # Blend LLM score with deterministic rule score for cross-model stability
+        # Respect LLM score while gently anchoring against explicit keyword cues
         if det_ref is not None:
             if any(cue in hl_lower for cue in _NEUTRAL_EDUCATIONAL_CUES):
                 score = 0
                 weight = min(weight, 4)
+            elif score == 0 and det_ref.sentiment_score != 0:
+                score = det_ref.sentiment_score
             elif det_ref.sentiment_score != 0:
-                score = int(round(0.25 * score + 0.75 * det_ref.sentiment_score))
-                if (det_ref.sentiment_score <= -20 and score > -15) or (
-                    det_ref.sentiment_score >= 20 and score < 15
-                ):
-                    score = det_ref.sentiment_score
+                score = int(round(0.65 * score + 0.35 * det_ref.sentiment_score))
 
         # Prevent explicitly bearish Gold price-action headlines from being scored positive
         if any(p in hl_lower for p in explicit_bearish_phrases) and score > -20:
@@ -687,26 +708,45 @@ def _reconcile_and_validate_analysis(
         return round(num / max(den, 1), 1)
 
     macro_w1 = 0.0
-    if tnx_price >= 4.50:
+    if tnx_chg >= 0.60:
+        macro_w1 -= 35.0
+    elif tnx_chg >= 0.20:
         macro_w1 -= 20.0
-    if tnx_chg > 0.25:
-        macro_w1 -= 20.0
-    elif tnx_chg < -0.25:
+    elif tnx_chg <= -0.60:
+        macro_w1 += 35.0
+    elif tnx_chg <= -0.20:
         macro_w1 += 20.0
-    if dxy_chg > 0.15:
-        macro_w1 -= 15.0
-    elif dxy_chg < -0.15:
-        macro_w1 += 10.0
 
-    w1_calc = max(-100.0, min(100.0, round(0.45 * macro_w1 + 0.55 * _w_avg(wedge_scores_by_id[1], -20.0), 1)))
-    w2_calc = max(-100.0, min(100.0, round(_w_avg(wedge_scores_by_id[2], -10.0 if tnx_chg > 0.2 else 10.0), 1)))
-    vix_adj = 25.0 if vix_price >= 20.0 else (5.0 if vix_price >= 17.0 else -10.0)
-    w3_calc = max(-100.0, min(100.0, round(0.30 * vix_adj + 0.70 * _w_avg(wedge_scores_by_id[3], 20.0), 1)))
-    flow_adj = 30.0 if (gc_chg > 0.2 or gld_chg > 0.2) else (-30.0 if (gc_chg < -0.2 or gld_chg < -0.2) else 0.0)
-    w4_calc = max(-100.0, min(100.0, round(0.50 * flow_adj + 0.50 * _w_avg(wedge_scores_by_id[4], -10.0), 1)))
+    if dxy_chg >= 0.35:
+        macro_w1 -= 25.0
+    elif dxy_chg >= 0.12:
+        macro_w1 -= 12.0
+    elif dxy_chg <= -0.35:
+        macro_w1 += 25.0
+    elif dxy_chg <= -0.12:
+        macro_w1 += 12.0
+
+    existing_wedges = output.get("wedge_breakdown") or []
+    llm_w_map = {int(w.get("weight_percentage", 0)): float(w.get("net_sentiment_score", 0.0)) for w in existing_wedges}
+
+    w1_news_avg = _w_avg(wedge_scores_by_id[1], llm_w_map.get(40, 0.0))
+    w1_data = round(0.45 * macro_w1 + 0.55 * w1_news_avg, 1)
+    w1_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(40, w1_data) + 0.45 * w1_data, 1)))
+
+    w2_news_avg = _w_avg(wedge_scores_by_id[2], llm_w_map.get(30, 0.0))
+    w2_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(30, w2_news_avg) + 0.45 * w2_news_avg, 1)))
+
+    vix_adj = 25.0 if vix_price >= 20.0 else (10.0 if vix_price >= 16.0 else 0.0)
+    w3_news_avg = _w_avg(wedge_scores_by_id[3], llm_w_map.get(20, 20.0))
+    w3_data = round(0.30 * vix_adj + 0.70 * w3_news_avg, 1)
+    w3_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(20, w3_data) + 0.45 * w3_data, 1)))
+
+    flow_adj = 30.0 if (gc_chg > 0.25 or gld_chg > 0.25) else (-25.0 if (gc_chg < -0.50 and gld_chg < -0.50) else 5.0)
+    w4_news_avg = _w_avg(wedge_scores_by_id[4], llm_w_map.get(10, 10.0))
+    w4_data = round(0.45 * flow_adj + 0.55 * w4_news_avg, 1)
+    w4_calc = max(-100.0, min(100.0, round(0.55 * llm_w_map.get(10, w4_data) + 0.45 * w4_data, 1)))
 
     calc_by_weight = {40: w1_calc, 30: w2_calc, 20: w3_calc, 10: w4_calc}
-    existing_wedges = output.get("wedge_breakdown") or []
     if len(existing_wedges) == 4:
         for w_obj in existing_wedges:
             wt_pct = int(w_obj.get("weight_percentage", 0))
@@ -1117,12 +1157,12 @@ def analyze_gold_market(
             "Please configure a valid API key in `.env`."
         )
 
-    global _GEMINI_DAILY_QUOTA_EXHAUSTED
+    global _EXHAUSTED_GEMINI_MODELS
     last_error: Optional[Exception] = None
+    models_to_try = [m for m in list(dict.fromkeys([model_name] + GEMINI_MODEL_CHAIN)) if m not in _EXHAUSTED_GEMINI_MODELS]
 
-    if HAS_GENAI and has_gemini_key and not _GEMINI_DAILY_QUOTA_EXHAUSTED:
+    if HAS_GENAI and has_gemini_key and models_to_try:
         client = genai.Client(api_key=GEMINI_API_KEY)
-        models_to_try = list(dict.fromkeys([model_name] + GEMINI_MODEL_CHAIN))
 
         for candidate_model in models_to_try:
             for attempt in range(max_retries_per_model):
@@ -1157,10 +1197,9 @@ def analyze_gold_market(
                         or "per day limit exceeded" in err_str.lower()
                     )
                     if is_daily_quota_exhausted:
-                        _GEMINI_DAILY_QUOTA_EXHAUSTED = True
+                        _EXHAUSTED_GEMINI_MODELS.add(candidate_model)
                         logger.warning(
-                            "Gemini daily Free-Tier quota (20 req/day) exhausted on '%s'. "
-                            "Switching immediately to Groq fallback for this session...",
+                            "Gemini daily Free-Tier quota exhausted on '%s'. Trying next available model...",
                             candidate_model,
                         )
                         break
