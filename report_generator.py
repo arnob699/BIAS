@@ -672,9 +672,21 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
           <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Last Updated (BST &bull; Bangladesh Standard Time)</div>
           <div class="text-[#1F1C18] font-mono font-semibold mt-0.5">{{ vm.generated_at_bst }}</div>
         </div>
-        <div class="paper-inset rounded-lg px-3.5 py-2">
-          <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Analysis Engine</div>
-          <div class="text-[#9A6B16] font-mono font-semibold mt-0.5">{{ analysis.analysis_engine or "gemini-3.5-flash" }}</div>
+        <div class="paper-inset rounded-lg px-3.5 py-2 max-w-md">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Analysis Engine</span>
+            {% if analysis.engine_error_detail %}
+            <span class="px-1.5 py-0.5 rounded bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0] text-[9px] font-mono font-bold uppercase">Groq Fallback Active</span>
+            {% else %}
+            <span class="px-1.5 py-0.5 rounded bg-[#E6F2EC] text-[#1B6B45] border border-[#B8D9C8] text-[9px] font-mono font-bold uppercase">Primary Online</span>
+            {% endif %}
+          </div>
+          <div class="text-[#9A6B16] font-mono font-bold mt-0.5 text-xs">{{ analysis.analysis_engine or "groq_api (openai/gpt-oss-120b)" }}</div>
+          {% if analysis.engine_error_detail %}
+          <div class="text-[#A82828] font-mono text-[10px] mt-0.5 leading-snug">
+            &#9888; {{ analysis.engine_error_detail }}
+          </div>
+          {% endif %}
         </div>
         <div class="paper-inset rounded-lg px-3.5 py-2">
           <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">News Sources Checked</div>
