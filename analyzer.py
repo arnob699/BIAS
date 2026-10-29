@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 # Cache Gemini daily Free-Tier exhaustion so repeated refreshes skip straight to Groq in 0ms
 _EXHAUSTED_GEMINI_MODELS: set = set()
+_EXHAUSTED_GROQ_MODELS: set = set()
 _LAST_GEMINI_ERROR_SUMMARY: Optional[str] = None
 
 
@@ -201,10 +202,13 @@ _BULLISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
     "dovish": (+60, "Dovish central bank rhetoric compresses sovereign bond yields, driving institutional inflows into Gold."),
     "yields fall": (+60, "Declining Treasury yields reduce real rate headwinds and directly boost XAUUSD valuation."),
     "falling yields": (+60, "Falling US yields lower carry costs for bullion, supporting upside in COMEX Gold futures."),
-    "war": (+85, "Acute military conflict triggers immediate safe-haven capital rotation into physical Gold, overriding USD strength."),
-    "iran": (+80, "Middle East geopolitical tensions inject geopolitical risk premia into XAUUSD safe-haven flows."),
-    "israel": (+80, "Escalating Middle East hostilities drive urgent geopolitical tail-risk hedging in Gold."),
-    "ukraine": (+75, "Eastern European war escalation reinforces sovereign and institutional safe-haven demand for bullion."),
+    "war escalation": (+85, "Acute military conflict triggers immediate safe-haven capital rotation into physical Gold, overriding USD strength."),
+    "iran strike": (+80, "Middle East military strikes inject acute geopolitical risk premia into XAUUSD safe-haven flows."),
+    "attack on iran": (+80, "Military strikes against Iranian infrastructure spark urgent safe-haven bidding in Gold."),
+    "iran missile": (+80, "Missile escalation in the Middle East prompts defensive hedging into physical bullion."),
+    "israel strike": (+80, "Escalating military action in the Middle East drives urgent geopolitical tail-risk hedging in Gold."),
+    "middle east war": (+80, "Broadening Middle East war escalation sustains strong safe-haven premia for bullion."),
+    "ukraine strike": (+75, "Escalation in the Russia-Ukraine theater reinforces institutional safe-haven demand for bullion."),
     "tariff": (+70, "Trade war and tariff uncertainty stoke stagflationary fears and safe-haven demand for Gold."),
     "trade war": (+75, "Global trade fragmentation accelerates de-dollarization and safe-haven accumulation of XAUUSD."),
     "safe haven": (+80, "Explicit safe-haven flows lift spot XAUUSD demand regardless of short-term DXY fluctuations."),
@@ -244,6 +248,42 @@ _BULLISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
 }
 
 _BEARISH_GOLD_CUES: Dict[str, Tuple[int, str]] = {
+    "remains bullish": (-50, "Persistent bullish Dollar momentum maintains strong currency headwinds for Gold."),
+    "bulls seem hesitant": (-35, "Hesitation among buyers reflects uncertain upside and strong real-yield resistance."),
+    "prices fall": (-50, "Softening spot Gold prices reflect selling pressure from firm yields and USD strength."),
+    "inflation rose": (-45, "Rising inflation measures delay Fed rate cuts and sustain elevated Treasury yields."),
+    "measure of inflation rose": (-45, "Rising inflation measures delay Fed rate cuts and sustain elevated Treasury yields."),
+    "10-year treasury yield hovers": (-60, "Elevated 10Y Treasury yields draw capital away from non-yielding Gold."),
+    "yield hovers above": (-60, "Elevated 10Y Treasury yields draw capital away from non-yielding Gold."),
+    "strong gdp report": (-55, "Stronger-than-expected economic growth dampens the outlook for Fed monetary easing."),
+    "second straight quarter": (-40, "Consecutive quarterly forecast downgrades reflect persistent macro headwinds for bullion."),
+    "corrects after": (-35, "Technical correction in spot Gold highlights selling pressure at upper resistance."),
+    "third-quarter u.s. gdp": (-55, "Resilient 3.4% US GDP growth underscores economic momentum and delays Fed monetary easing, weighing on XAUUSD."),
+    "gdp increases": (-55, "Stronger-than-expected US GDP growth reduces the urgency for Fed rate cuts and supports real Treasury yields."),
+    "3.4%": (-50, "Hotter-than-forecast economic growth bars the Fed from aggressive easing, pressuring non-yielding bullion."),
+    "better-than-expected 3.4%": (-55, "Above-consensus US GDP expansion strengthens the Dollar and lifts real yields against Gold."),
+    "core pce": (-50, "Persistent core PCE inflation readings keep the Federal Reserve restrictive and support elevated real yields against Gold."),
+    "pce price index rises": (-50, "Sticky PCE price gains reduce the probability of near-term Fed rate cuts, capping XAUUSD."),
+    "inflation accelerates": (-55, "Accelerating inflation data reinforces a higher-for-longer Fed policy stance, weighing on zero-yielding Gold."),
+    "jobless claims hover": (-45, "Resilient US labor market conditions with jobless claims near historic lows reduce Fed easing bets."),
+    "57-year lows": (-50, "Jobless claims near multi-decade lows demonstrate labor resilience, keeping US Treasury yields elevated."),
+    "10-year treasury yield hovers above 5%": (-60, "Benchmark 10-year US Treasury yields hovering above 5% represent steep opportunity cost headwinds for bullion."),
+    "yields above 5%": (-60, "Elevated 10Y sovereign yields above 5% draw capital away from zero-yielding Gold into risk-free fixed income."),
+    "play catch-up to quell inflation": (-45, "Risks of the Fed maintaining aggressive restrictive policy to quell inflation suppress Gold upside."),
+    "quell inflation": (-45, "Central bank focus on suppressing inflation sustains elevated carry costs for bullion."),
+    "split fed keeps december hike alive": (-55, "Ongoing prospect of policy rate hikes reinforces restrictive real-rate pressure on Gold."),
+    "december hike alive": (-55, "Uncertainty over potential rate hikes keeps institutional Gold buyers on the sidelines."),
+    "dow ratio warns of more downside as yields rise": (-50, "Cross-asset valuation models warn of further Gold downside as Treasury yields remain elevated."),
+    "warns of more downside": (-50, "Technical and macro headwinds warn of continued liquidation pressure in XAUUSD."),
+    "forecast cut for second": (-40, "Downgrades to institutional Gold price forecasts reflect ongoing headwinds from higher real yields."),
+    "forecast cut": (-40, "Analyst price forecast reductions dampen medium-term investment appetite for Gold futures."),
+    "peace deal with iran": (-50, "Diplomatic engagement and peace negotiations with Iran deflate geopolitical risk premia in safe-haven Gold."),
+    "peace deal": (-45, "Geopolitical de-escalation progress unwinds safe-haven hedging in spot XAUUSD."),
+    "peace talks": (-45, "Diplomatic peace negotiations moderate urgent safe-haven bidding in bullion."),
+    "iran diplomacy": (-45, "Diplomatic engagement reduces immediate Middle East conflict risks and tempers Gold safe-haven bids."),
+    "oil falls as traders weigh iran": (-40, "Easing Middle East conflict risk unwinds risk premia across energy and precious metals complexes."),
+    "weigh iran diplomacy": (-40, "Market focus on diplomatic avenues reduces speculative safe-haven premia in Gold."),
+    "downplays iran peace talks": (-20, "Mixed geopolitical headlines create two-way chop without unilateral safe-haven escalation."),
     "dollar index remains bullish": (-50, "A firmer US Dollar Index forecast creates direct inverse headwinds for XAUUSD."),
     "dollar remains bullish": (-50, "A firmer US Dollar Index forecast creates direct inverse headwinds for XAUUSD."),
     "dollar bullish": (-50, "Dollar bullishness raises the opportunity cost of holding USD-denominated Gold."),
@@ -313,8 +353,13 @@ _NEUTRAL_EDUCATIONAL_CUES: Tuple[str, ...] = (
 
 
 def _cue_matches(cue: str, text: str) -> bool:
-    """Match a keyword/phrase cue using word boundaries to prevent substring collisions (e.g., 'war' in 'towards')."""
-    return bool(re.search(rf"\b{re.escape(cue)}\b", text))
+    """Match a keyword/phrase cue using smart boundaries on alphanumeric ends to handle '%', '$', etc."""
+    if not cue:
+        return False
+    esc = re.escape(cue)
+    prefix = r"\b" if cue[0].isalnum() else ""
+    suffix = r"\b" if cue[-1].isalnum() else ""
+    return bool(re.search(f"{prefix}{esc}{suffix}", text))
 
 
 def _infer_wedge_id(wedge_name: str, fallback_id: int = 4) -> int:
@@ -461,25 +506,36 @@ def build_deterministic_gold_analysis(payload: Dict[str, Any]) -> Dict[str, Any]
         den = sum(w for _, w in pairs)
         return round(num / max(den, 1), 1)
 
-    # Compute live market adjustments for each wedge based on actual intraday moves (no permanent bearish penalty)
+    # Compute live market adjustments for each wedge using both absolute yields/DXY levels and intraday changes
     macro_w1_score = 0.0
-    if tnx_chg >= 0.60:
-        macro_w1_score -= 35.0
-    elif tnx_chg >= 0.20:
-        macro_w1_score -= 20.0
-    elif tnx_chg <= -0.60:
-        macro_w1_score += 35.0
-    elif tnx_chg <= -0.20:
+    # Yield level structural impact (high yields = structurally bearish for zero-yielding Gold)
+    if tnx_price >= 4.75:
+        macro_w1_score -= 25.0
+    elif tnx_price >= 4.30:
+        macro_w1_score -= 10.0
+    elif tnx_price <= 3.80:
         macro_w1_score += 20.0
 
-    if dxy_chg >= 0.35:
-        macro_w1_score -= 30.0
-    elif dxy_chg >= 0.12:
-        macro_w1_score -= 15.0
-    elif dxy_chg <= -0.35:
-        macro_w1_score += 30.0
-    elif dxy_chg <= -0.12:
+    # DXY level structural impact
+    if dxy_price >= 102.0:
+        macro_w1_score -= 20.0
+    elif dxy_price >= 101.0:
+        macro_w1_score -= 10.0
+    elif dxy_price <= 99.0:
+        macro_w1_score += 20.0
+
+    # Intraday rate and dollar adjustments
+    if tnx_chg >= 0.40:
+        macro_w1_score -= 20.0
+    elif tnx_chg <= -0.40:
         macro_w1_score += 15.0
+
+    if dxy_chg >= 0.25:
+        macro_w1_score -= 20.0
+    elif dxy_chg <= -0.25:
+        macro_w1_score += 15.0
+
+    macro_w1_score = max(-80.0, min(80.0, macro_w1_score))
 
     w1_news = _weighted_news_avg(wedge_headline_scores[1], 0.0)
     w1_score = max(-100.0, min(100.0, round(0.50 * macro_w1_score + 0.50 * w1_news, 1)))
@@ -488,13 +544,13 @@ def build_deterministic_gold_analysis(payload: Dict[str, Any]) -> Dict[str, Any]
     w2_score = max(-100.0, min(100.0, _weighted_news_avg(wedge_headline_scores[2], 0.0)))
 
     # Wedge 3 (20%): Geopolitical Risk & Safe-Haven (^VIX)
-    vix_bonus = 25.0 if vix_price >= 20.0 else (10.0 if vix_price >= 16.0 else 0.0)
-    w3_news = _weighted_news_avg(wedge_headline_scores[3], 25.0)
-    w3_score = max(-100.0, min(100.0, round(0.35 * vix_bonus + 0.65 * w3_news, 1)))
+    vix_bonus = 20.0 if vix_price >= 20.0 else (5.0 if vix_price >= 16.0 else 0.0)
+    w3_news = _weighted_news_avg(wedge_headline_scores[3], 0.0)
+    w3_score = max(-100.0, min(100.0, round(0.25 * vix_bonus + 0.75 * w3_news, 1)))
 
     # Wedge 4 (10%): Central Bank Buying, COMEX & GLD ETF flows
-    flow_bonus = 30.0 if (gc_chg > 0.25 or gld_chg > 0.25) else (-25.0 if (gc_chg < -0.50 and gld_chg < -0.50) else 10.0)
-    w4_news = _weighted_news_avg(wedge_headline_scores[4], 15.0)
+    flow_bonus = 25.0 if (gc_chg > 0.25 or gld_chg > 0.25) else (-25.0 if (gc_chg < -0.35 or gld_chg < -0.35) else 0.0)
+    w4_news = _weighted_news_avg(wedge_headline_scores[4], 0.0)
     w4_score = max(-100.0, min(100.0, round(0.50 * flow_bonus + 0.50 * w4_news, 1)))
 
     # Composite Weighted Sentiment Score (40% W1 + 30% W2 + 20% W3 + 10% W4)
@@ -988,7 +1044,12 @@ def _analyze_with_groq(
         "Include all 18 headlines in `news_items` and keep each `gold_transmission_mechanism` to 1 short sentence."
     )
 
-    for groq_model in GROQ_MODEL_CHAIN:
+    global _EXHAUSTED_GROQ_MODELS
+    groq_models_to_try = [
+        m for m in GROQ_MODEL_CHAIN if m not in _EXHAUSTED_GROQ_MODELS
+    ] or list(GROQ_MODEL_CHAIN)
+
+    for groq_model in groq_models_to_try:
         for attempt in range(max_retries_per_model):
             try:
                 logger.info(
@@ -1023,11 +1084,18 @@ def _analyze_with_groq(
                     timeout=45,
                 )
 
-                if resp.status_code in (429, 503) and attempt < max_retries_per_model - 1:
+                if resp.status_code == 429:
+                    logger.warning(
+                        "Groq HTTP 429 rate limit reached on '%s'. Adding to exhausted set and trying next model...",
+                        groq_model,
+                    )
+                    _EXHAUSTED_GROQ_MODELS.add(groq_model)
+                    break
+
+                if resp.status_code == 503 and attempt < max_retries_per_model - 1:
                     sleep_sec = base_backoff_seconds * (2 ** attempt)
                     logger.warning(
-                        "Groq HTTP %d on '%s' (attempt %d/%d). Backing off %.1fs...",
-                        resp.status_code,
+                        "Groq HTTP 503 on '%s' (attempt %d/%d). Backing off %.1fs...",
                         groq_model,
                         attempt + 1,
                         max_retries_per_model,
