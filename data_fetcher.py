@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import calendar
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+BST_TZ = timezone(timedelta(hours=6), name='BST')
 from email.utils import parsedate_to_datetime
 import html
 import json
@@ -662,6 +664,7 @@ def _fetch_single_gold_rss_feed(
 
         age_minutes, age_human = _format_relative_age(published_dt, now_utc)
         published_utc_str = published_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        published_bst_str = published_dt.astimezone(BST_TZ).strftime("%d %b %Y, %I:%M %p BST")
         wedge_info = classify_gold_wedge(combined_text, fallback_wedge_key=wedge_hint)
 
         items.append(
@@ -669,9 +672,10 @@ def _fetch_single_gold_rss_feed(
                 "headline": clean_title,
                 "summary": clean_summary,
                 "source": effective_source,
-                "source_time": f"{effective_source} | {published_utc_str} ({age_human})",
+                "source_time": f"{effective_source} | {published_bst_str} ({age_human})",
                 "url": entry.get("link", ""),
                 "published_utc": published_utc_str,
+                "published_bst": published_bst_str,
                 "published_epoch": int(published_dt.timestamp()),
                 "age_minutes": age_minutes,
                 "age_human": age_human,
@@ -1309,7 +1313,7 @@ def fetch_gold_economic_calendar(
                 "currency": "USD → XAUUSD",
                 "gold_category": profile["gold_category"],
                 "wedge_id": profile["wedge_id"],
-                "date_utc": ev_dt_utc.strftime("%Y-%m-%d %H:%M UTC"),
+                "date_utc": ev_dt_utc.astimezone(BST_TZ).strftime("%d %b %Y, %I:%M %p BST"),
                 "date_iso": ev_dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "timestamp_epoch": int(ev_dt_utc.timestamp()),
                 "release_status": release_status,
@@ -1419,7 +1423,8 @@ def fetch_market_intelligence_payload(
             wedge_counts[short_n] += 1
 
     payload: Dict[str, Any] = {
-        "generated_at_utc": finished_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at_utc": finished_at.astimezone(BST_TZ).strftime("%d %b %Y, %I:%M:%S %p BST"),
+        "generated_at_bst": finished_at.astimezone(BST_TZ).strftime("%d %b %Y, %I:%M:%S %p BST"),
         "fetch_latency_seconds": elapsed_sec,
         "primary_asset": PRIMARY_ASSET,
         "target_tickers": target_tickers or TARGET_TICKERS,
