@@ -330,11 +330,6 @@ def run_web_server(
         refresh_gold_terminal_report(force_quant_only=False)
     else:
         _sync_users_into_existing_html()
-        import threading
-        threading.Thread(
-            target=lambda: refresh_gold_terminal_report(force_quant_only=False),
-            daemon=True,
-        ).start()
 
     admin_acc = get_admin_account()
     users_list = get_all_users()
