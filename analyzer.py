@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 # Cache Gemini daily Free-Tier exhaustion so repeated refreshes skip straight to Groq in 0ms
 _EXHAUSTED_GEMINI_MODELS: set = set()
+_LAST_GEMINI_ERROR_SUMMARY: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -627,9 +628,10 @@ def _reconcile_and_validate_analysis(
         "gold falls",
         "weigh on bullion",
     )
-    # Map raw breaking news metadata by normalized headline for cross-model anchoring
+    # Map raw breaking news metadata by normalized headline and fuzzy tokens for cross-model anchoring
+    raw_news_list: List[Dict[str, Any]] = list(payload.get("intraday_breaking_news") or [])
     raw_news_map: Dict[str, Dict[str, Any]] = {}
-    for raw_item in payload.get("intraday_breaking_news") or []:
+    for raw_item in raw_news_list:
         hl_key = (raw_item.get("headline") or "").strip().lower()
         if hl_key:
             raw_news_map[hl_key] = raw_item
@@ -637,10 +639,26 @@ def _reconcile_and_validate_analysis(
     reconciled_news: List[Dict[str, Any]] = []
     wedge_scores_by_id: Dict[int, List[Tuple[int, int]]] = {1: [], 2: [], 3: [], 4: []}
 
-    for item in output.get("news_items") or []:
+    for idx_item, item in enumerate(output.get("news_items") or []):
         n = dict(item)
         hl_lower = (n.get("headline") or "").strip().lower()
         raw_ref = raw_news_map.get(hl_lower)
+        if raw_ref is None and hl_lower:
+            hl_words = set(re.findall(r"[a-z0-9]{3,}", hl_lower))
+            best_ov = 0.0
+            for r_cand in raw_news_list:
+                r_words = set(re.findall(r"[a-z0-9]{3,}", (r_cand.get("headline") or "").lower()))
+                if hl_words and r_words:
+                    ov = len(hl_words & r_words) / max(1, min(len(hl_words), len(r_words)))
+                    if ov > best_ov and ov >= 0.55:
+                        best_ov = ov
+                        raw_ref = r_cand
+        if raw_ref is None and idx_item < len(raw_news_list):
+            raw_ref = raw_news_list[idx_item]
+        if raw_ref is not None:
+            n["headline"] = raw_ref.get("headline") or n.get("headline")
+            n["source_time"] = raw_ref.get("source_time") or n.get("source_time")
+            hl_lower = (n.get("headline") or "").strip().lower()
         det_ref = _score_headline_deterministically(raw_ref) if raw_ref else None
 
         score = int(n.get("sentiment_score", 0))
@@ -1010,7 +1028,8 @@ def _analyze_with_groq(
                         },
                     ],
                     "response_format": {"type": "json_object"},
-                    "temperature": 0.15,
+                    "temperature": 0.0,
+                    "seed": 42,
                     "max_tokens": 3200,
                 }
                 resp = requests.post(
@@ -1157,80 +1176,68 @@ def analyze_gold_market(
             "Please configure a valid API key in `.env`."
         )
 
-    global _EXHAUSTED_GEMINI_MODELS
+    global _EXHAUSTED_GEMINI_MODELS, _LAST_GEMINI_ERROR_SUMMARY
     last_error: Optional[Exception] = None
-    models_to_try = [m for m in list(dict.fromkeys([model_name] + GEMINI_MODEL_CHAIN)) if m not in _EXHAUSTED_GEMINI_MODELS]
+
+    def _format_gemini_error(exc_obj: Exception, m_name: str) -> str:
+        raw_e = str(exc_obj)
+        up_e = raw_e.upper()
+        if "429" in raw_e or "RESOURCE_EXHAUSTED" in up_e or "QUOTA" in up_e:
+            return f"Gemini ({m_name}) HTTP 429 Quota Exhausted (RESOURCE_EXHAUSTED) → Auto-Switched to Groq"
+        if "400" in raw_e or "API_KEY_INVALID" in up_e or "INVALID_ARGUMENT" in up_e:
+            return f"Gemini ({m_name}) HTTP 400 API Key / Request Error → Auto-Switched to Groq"
+        if "403" in raw_e or "PERMISSION_DENIED" in up_e:
+            return f"Gemini ({m_name}) HTTP 403 Permission Denied → Auto-Switched to Groq"
+        if "404" in raw_e or "NOT_FOUND" in up_e:
+            return f"Gemini ({m_name}) HTTP 404 Model Unavailable → Auto-Switched to Groq"
+        if "503" in raw_e or "UNAVAILABLE" in up_e:
+            return f"Gemini ({m_name}) HTTP 503 Service Unavailable → Auto-Switched to Groq"
+        short_msg = re.sub(r"\s+", " ", raw_e).strip()[:80]
+        return f"Gemini ({m_name}) Error ({short_msg}) → Auto-Switched to Groq"
+
+    if not has_gemini_key:
+        _LAST_GEMINI_ERROR_SUMMARY = f"Gemini ({model_name}) API Key Not Configured → Using Groq Fallback"
+
+    models_to_try = [model_name] if model_name not in _EXHAUSTED_GEMINI_MODELS else []
 
     if HAS_GENAI and has_gemini_key and models_to_try:
         client = genai.Client(api_key=GEMINI_API_KEY)
 
         for candidate_model in models_to_try:
-            for attempt in range(max_retries_per_model):
-                try:
-                    logger.info(
-                        "Sending single batched Gold analysis request to Gemini model '%s' (attempt %d/%d)...",
-                        candidate_model,
-                        attempt + 1,
-                        max_retries_per_model,
-                    )
-                    response = client.models.generate_content(
-                        model=candidate_model,
-                        contents=json.dumps(batched_prompt_payload, indent=2),
-                        config=types.GenerateContentConfig(
-                            system_instruction=GOLD_SYSTEM_INSTRUCTION,
-                            response_mime_type="application/json",
-                            response_schema=GoldAnalysisReport,
-                            temperature=0.15,
-                        ),
-                    )
+            try:
+                logger.info(
+                    "Sending single batched Gold analysis request to primary Gemini model '%s'...",
+                    candidate_model,
+                )
+                response = client.models.generate_content(
+                    model=candidate_model,
+                    contents=json.dumps(batched_prompt_payload, indent=2),
+                    config=types.GenerateContentConfig(
+                        system_instruction=GOLD_SYSTEM_INSTRUCTION,
+                        response_mime_type="application/json",
+                        response_schema=GoldAnalysisReport,
+                        temperature=0.0,
+                    ),
+                )
 
-                    validated = GoldAnalysisReport.model_validate_json(response.text)
-                    output = _reconcile_and_validate_analysis(validated.model_dump(), payload)
-                    output["analysis_engine"] = f"gemini_api ({candidate_model})"
-                    return output
+                validated = GoldAnalysisReport.model_validate_json(response.text)
+                output = _reconcile_and_validate_analysis(validated.model_dump(), payload)
+                output["analysis_engine"] = f"gemini_api ({candidate_model})"
+                output["engine_error_detail"] = ""
+                _LAST_GEMINI_ERROR_SUMMARY = None
+                return output
 
-                except Exception as exc:
-                    last_error = exc
-                    err_str = str(exc)
-                    is_daily_quota_exhausted = (
-                        "GenerateRequestsPerDay" in err_str
-                        or "per day limit exceeded" in err_str.lower()
-                    )
-                    if is_daily_quota_exhausted:
-                        _EXHAUSTED_GEMINI_MODELS.add(candidate_model)
-                        logger.warning(
-                            "Gemini daily Free-Tier quota exhausted on '%s'. Trying next available model...",
-                            candidate_model,
-                        )
-                        break
+            except Exception as exc:
+                last_error = exc
+                _LAST_GEMINI_ERROR_SUMMARY = _format_gemini_error(exc, candidate_model)
+                _EXHAUSTED_GEMINI_MODELS.add(candidate_model)
+                logger.warning(
+                    "%s. Switching immediately to Groq fallback...",
+                    _LAST_GEMINI_ERROR_SUMMARY,
+                )
+                break
 
-                    is_rate_limit = (
-                        "429" in err_str
-                        or "RESOURCE_EXHAUSTED" in err_str.upper()
-                        or "QUOTA" in err_str.upper()
-                        or "503" in err_str
-                    )
-                    if is_rate_limit and attempt < max_retries_per_model - 1:
-                        sleep_sec = base_backoff_seconds * (2 ** attempt)
-                        logger.warning(
-                            "HTTP 429 / rate-limit encountered on '%s' (attempt %d/%d). "
-                            "Backing off for %.1fs before retry...",
-                            candidate_model,
-                            attempt + 1,
-                            max_retries_per_model,
-                            sleep_sec,
-                        )
-                        time.sleep(sleep_sec)
-                        continue
-
-                    logger.warning(
-                        "Model '%s' failed with error: %s. Trying next fallback model if available...",
-                        candidate_model,
-                        exc,
-                    )
-                    break
-
-    # Automatic failover to Groq API when Gemini quota is exhausted
+    # Automatic failover to Groq API when Gemini fails or hits quota
     if has_groq_key:
         logger.info("Failing over to Groq API automatic fallback engine...")
         groq_result = _analyze_with_groq(
@@ -1242,6 +1249,9 @@ def analyze_gold_market(
             engine_label = groq_result.get("analysis_engine")
             reconciled_groq = _reconcile_and_validate_analysis(groq_result, payload)
             reconciled_groq["analysis_engine"] = engine_label
+            reconciled_groq["engine_error_detail"] = _LAST_GEMINI_ERROR_SUMMARY or (
+                f"Gemini ({model_name}) Unavailable → Switched to Groq Fallback"
+            )
             return reconciled_groq
 
     if allow_fallback_on_missing_key:
@@ -1277,7 +1287,7 @@ if __name__ == "__main__":
 
     # Strictly re-validate against GoldAnalysisReport Pydantic schema
     validated_schema = GoldAnalysisReport.model_validate(
-        {k: v for k, v in analysis_result.items() if k != "analysis_engine"}
+        {k: v for k, v in analysis_result.items() if k not in ("analysis_engine", "engine_error_detail")}
     )
 
     print(f"\n[1] GOLD ANALYSIS SUMMARY (Engine: {analysis_result.get('analysis_engine')})")
