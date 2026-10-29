@@ -1,15 +1,17 @@
 """
-Standalone Gold (`XAUUSD` / COMEX `GC=F`) Terminal HTML Report Generator (`report_generator.py`).
+Gold (`XAUUSD` / COMEX `GC=F`) Desk Research & Intraday Portal Generator (`report_generator.py`).
 
-Renders `xauusd_intraday_report.html` using Jinja2, Tailwind CSS CDN, and Chart.js CDN
-with an institutional dark-mode Gold trading terminal aesthetic (`#0b0f19` background,
-metallic gold `#f59e0b`, emerald `#10b981`, and crimson `#ef4444` accents).
+Renders `xauusd_intraday_report.html` using a warm, creamy, human-crafted editorial layout
+(inspired by classic financial journals and bullion desk morning briefs) with clear
+hierarchy, natural paper/ink contrast, and intuitive member management.
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Optional
 
 from jinja2 import BaseLoader, Environment
@@ -17,58 +19,94 @@ from jinja2 import BaseLoader, Environment
 from users_store import get_admin_account, get_all_users
 
 DEFAULT_REPORT_FILENAME = "xauusd_intraday_report.html"
+BST_TZ = timezone(timedelta(hours=6), name="BST")
+
+
+def _convert_any_utc_to_bst(text: str) -> str:
+    """
+    Convert any ISO-8601 UTC timestamp (`2026-10-29T11:08:50Z`) or `YYYY-MM-DD HH:MM UTC`
+    found inside `text` into Bangladesh Standard Time (`DD Mon YYYY, hh:mm AM/PM BST`).
+    """
+    if not text:
+        return ""
+    s = str(text).strip()
+
+    # Match ISO UTC: 2026-10-29T11:08:50Z
+    def _repl_iso(m: re.Match) -> str:
+        raw_iso = m.group(0)
+        try:
+            dt = datetime.fromisoformat(raw_iso.replace("Z", "+00:00"))
+            dt_bst = dt.astimezone(BST_TZ)
+            if dt.second:
+                return dt_bst.strftime("%d %b %Y, %I:%M:%S %p BST")
+            return dt_bst.strftime("%d %b %Y, %I:%M %p BST")
+        except Exception:
+            return raw_iso
+
+    s = re.sub(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z", _repl_iso, s)
+
+    # Match YYYY-MM-DD HH:MM UTC
+    def _repl_utc(m: re.Match) -> str:
+        ymd_hm = m.group(1)
+        try:
+            dt = datetime.strptime(ymd_hm, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            return dt.astimezone(BST_TZ).strftime("%d %b %Y, %I:%M %p BST")
+        except Exception:
+            return m.group(0)
+
+    s = re.sub(r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s*UTC", _repl_utc, s)
+    return s
+
 
 
 def _derive_display_bias_badge(overall_bias: str) -> Dict[str, str]:
     """
-    Map `overall_bias` from `GoldAnalysisReport` to the Hero Banner badge label
-    (`STRONG BUY XAUUSD`, `BUY XAUUSD`, `NEUTRAL`, `SELL XAUUSD`, `STRONG SELL XAUUSD`)
-    and corresponding Tailwind color classes.
+    Map `overall_bias` to clean, human-friendly badge labels and warm editorial colors.
     """
     normalized = (overall_bias or "NEUTRAL / CHOPPY").upper().strip()
     if normalized == "STRONG BUY":
         return {
-            "label": "STRONG BUY XAUUSD",
+            "label": "STRONG BUY • XAUUSD",
             "raw": normalized,
-            "bg_class": "bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-emerald-500/20",
-            "dot_class": "bg-emerald-400",
-            "accent_hex": "#10b981",
-            "bar_class": "from-emerald-600 to-emerald-400",
+            "bg_class": "bg-[#E6F2EC] border-[#1B6B45] text-[#145235]",
+            "dot_class": "bg-[#1B6B45]",
+            "accent_hex": "#1B6B45",
+            "bar_class": "bg-[#1B6B45]",
         }
     if normalized == "BUY":
         return {
-            "label": "BUY XAUUSD",
+            "label": "BUY • XAUUSD",
             "raw": normalized,
-            "bg_class": "bg-emerald-500/15 border-emerald-500/80 text-emerald-300 shadow-emerald-500/10",
-            "dot_class": "bg-emerald-400",
-            "accent_hex": "#10b981",
-            "bar_class": "from-emerald-600 to-emerald-400",
+            "bg_class": "bg-[#EBF5F0] border-[#287D54] text-[#1B6B45]",
+            "dot_class": "bg-[#287D54]",
+            "accent_hex": "#287D54",
+            "bar_class": "bg-[#287D54]",
         }
     if normalized == "STRONG SELL":
         return {
-            "label": "STRONG SELL XAUUSD",
+            "label": "STRONG SELL • XAUUSD",
             "raw": normalized,
-            "bg_class": "bg-red-500/20 border-red-400 text-red-300 shadow-red-500/20",
-            "dot_class": "bg-red-400",
-            "accent_hex": "#ef4444",
-            "bar_class": "from-red-600 to-red-400",
+            "bg_class": "bg-[#FAEDED] border-[#A82828] text-[#851D1D]",
+            "dot_class": "bg-[#A82828]",
+            "accent_hex": "#A82828",
+            "bar_class": "bg-[#A82828]",
         }
     if normalized == "SELL":
         return {
-            "label": "SELL XAUUSD",
+            "label": "SELL • XAUUSD",
             "raw": normalized,
-            "bg_class": "bg-red-500/15 border-red-500/80 text-red-300 shadow-red-500/10",
-            "dot_class": "bg-red-400",
-            "accent_hex": "#ef4444",
-            "bar_class": "from-red-600 to-red-400",
+            "bg_class": "bg-[#FDF2F2] border-[#B83232] text-[#A82828]",
+            "dot_class": "bg-[#B83232]",
+            "accent_hex": "#B83232",
+            "bar_class": "bg-[#B83232]",
         }
     return {
-        "label": "NEUTRAL",
+        "label": "NEUTRAL / RANGE • XAUUSD",
         "raw": normalized,
-        "bg_class": "bg-amber-500/15 border-amber-400/80 text-amber-300 shadow-amber-500/10",
-        "dot_class": "bg-amber-400",
-        "accent_hex": "#f59e0b",
-        "bar_class": "from-amber-600 to-amber-400",
+        "bg_class": "bg-[#FBF3E0] border-[#B47B1C] text-[#8A5A0E]",
+        "dot_class": "bg-[#B47B1C]",
+        "accent_hex": "#B47B1C",
+        "bar_class": "bg-[#B47B1C]",
     }
 
 
@@ -77,8 +115,7 @@ def _derive_confluence_status(
     payload: Dict[str, Any],
 ) -> Dict[str, str]:
     """
-    Build the Confluence Status tag for the Hero Banner based on `confidence_score`,
-    wedge alignment, and cross-asset driver alignment.
+    Build a plain-English desk summary tag based on conviction and cross-asset alignment.
     """
     conf = int(analysis.get("confidence_score", 50))
     wedges = analysis.get("wedge_breakdown") or []
@@ -96,35 +133,35 @@ def _derive_confluence_status(
 
     if conf >= 80:
         return {
-            "label": "High Confluence: Yields, DXY & News Aligned",
-            "badge_class": "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-            "description": "Macro rates (^TNX), US Dollar (DXY), and high-weight breaking catalysts point in the same direction for XAUUSD.",
+            "label": "Strong Alignment Across Yields, Dollar & News",
+            "badge_class": "bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]",
+            "description": "Treasury yields (^TNX), the US Dollar (DXY), and breaking macro news are all pointing in the same direction for Gold.",
         }
     if w1_score < -10 and w3_score > 15:
         return {
-            "label": "Hawkish Yield Pressure vs. Geopolitical Support",
-            "badge_class": "bg-amber-500/15 text-amber-300 border-amber-500/40",
+            "label": "Firm Yields Weighing Against Safe-Haven Demand",
+            "badge_class": "bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]",
             "description": (
-                f"Elevated US 10Y yields (^TNX {tnx_price:.3f}%, {tnx_chg:+.2f}%) and Fed rate hold weigh on Gold "
-                f"(DXY {dxy_price:.2f}, {dxy_chg:+.2f}%), partially buffered by geopolitical safe-haven flows."
+                f"Higher US 10Y yields ({tnx_price:.3f}%, {tnx_chg:+.2f}%) and a steady Dollar "
+                f"(DXY {dxy_price:.2f}, {dxy_chg:+.2f}%) cap upside, while geopolitical buying offers support on dips."
             ),
         }
     if w1_score > 10 and w3_score < -10:
         return {
-            "label": "Mixed Signals: Dovish Rates vs. Fading Geopolitical Premium",
-            "badge_class": "bg-amber-500/15 text-amber-300 border-amber-500/40",
-            "description": "Supportive yield/USD backdrop offset by easing safe-haven risk premia.",
+            "label": "Supportive Yields Offset by Calmer Geopolitics",
+            "badge_class": "bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]",
+            "description": "Softer yields and Dollar support Gold, though fading safe-haven urgency slows breakout momentum.",
         }
     if conf >= 65:
         return {
-            "label": "Moderate Confluence: Directional Tilt Forming",
-            "badge_class": "bg-sky-500/15 text-sky-300 border-sky-500/40",
-            "description": "Primary macro wedges favor a directional bias, with secondary cross-currents requiring disciplined sizing.",
+            "label": "Constructive Setup with Selective Cross-Currents",
+            "badge_class": "bg-[#EDF3F8] text-[#2B547E] border-[#C2D6E8]",
+            "description": "Primary macro drivers lean in favor of the desk bias, though traders should respect intraday support and resistance.",
         }
     return {
-        "label": "Cross-Current Regime: Two-Way Macro & News Conflict",
-        "badge_class": "bg-amber-500/15 text-amber-300 border-amber-500/40",
-        "description": "Conflicting signals across Fed/Yields (Wedge 1) and Safe-Haven/Flow catalysts keep XAUUSD rotational.",
+        "label": "Two-Way Market: Mixed Rate & Safe-Haven Signals",
+        "badge_class": "bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]",
+        "description": "Competing signals between Treasury yields and physical/safe-haven flows keep Gold in a range-trading environment.",
     }
 
 
@@ -133,13 +170,11 @@ def _prepare_report_view_model(
     analysis: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Prepare enriched template variables, sorted news rows, and serialized Chart.js
-    datasets for `xauusd_intraday_report.html`.
+    Prepare template variables, sorted news rows, and Chart.js datasets.
     """
     bias_meta = _derive_display_bias_badge(analysis.get("overall_bias", "NEUTRAL / CHOPPY"))
     confluence_meta = _derive_confluence_status(analysis, payload)
 
-    # Separate primary thesis bullets from the #1 invalidation trigger bullet if marked
     raw_bullets: List[str] = list(analysis.get("why_buy_or_sell_thesis") or [])
     thesis_bullets: List[str] = []
     invalidation_bullet: Optional[str] = None
@@ -156,19 +191,58 @@ def _prepare_report_view_model(
     if invalidation_bullet is None and thesis_bullets:
         invalidation_bullet = thesis_bullets.pop(-1)
 
-    # Map URLs from raw `intraday_breaking_news` onto analyzed `news_items` by headline match
-    raw_url_map: Dict[str, str] = {}
-    for raw_item in payload.get("intraday_breaking_news") or []:
+    raw_news_list: List[Dict[str, Any]] = list(payload.get("intraday_breaking_news") or [])
+    raw_meta_map: Dict[str, Dict[str, Any]] = {}
+    for raw_item in raw_news_list:
         hl = (raw_item.get("headline") or "").strip().lower()
-        if hl and raw_item.get("url"):
-            raw_url_map[hl] = raw_item["url"]
+        if hl:
+            raw_meta_map[hl] = raw_item
 
-    # Sort news_items strictly by `impact_weight` descending (10 down to 1), breaking ties by |sentiment_score|
+    fallback_bst_now = _convert_any_utc_to_bst(payload.get("generated_at_utc", "")) or datetime.now(BST_TZ).strftime("%d %b %Y, %I:%M %p BST")
+
     analyzed_news: List[Dict[str, Any]] = []
-    for item in analysis.get("news_items") or []:
+    for idx_item, item in enumerate(analysis.get("news_items") or []):
         item_copy = dict(item)
         hl_key = (item_copy.get("headline") or "").strip().lower()
-        item_copy["url"] = raw_url_map.get(hl_key, "")
+        matched_raw = raw_meta_map.get(hl_key)
+
+        # Fuzzy fallback match by word overlap if LLM slightly edited headline
+        if matched_raw is None and hl_key:
+            hl_words = set(re.findall(r"[a-z0-9]{3,}", hl_key))
+            best_score = 0.0
+            for r_item in raw_news_list:
+                r_words = set(re.findall(r"[a-z0-9]{3,}", (r_item.get("headline") or "").lower()))
+                if hl_words and r_words:
+                    overlap = len(hl_words & r_words) / max(1, min(len(hl_words), len(r_words)))
+                    if overlap > best_score and overlap >= 0.5:
+                        best_score = overlap
+                        matched_raw = r_item
+
+        if matched_raw is None and idx_item < len(raw_news_list):
+            matched_raw = raw_news_list[idx_item]
+
+        item_copy["url"] = (matched_raw or {}).get("url", "")
+        raw_source = (matched_raw or {}).get("source") or str(item_copy.get("source_time") or "Financial Desk").split("|")[0].strip()
+        raw_pub_bst = (matched_raw or {}).get("published_bst") or _convert_any_utc_to_bst((matched_raw or {}).get("published_utc", ""))
+        if not raw_pub_bst:
+            converted_st = _convert_any_utc_to_bst(str(item_copy.get("source_time") or ""))
+            if "BST" in converted_st:
+                raw_pub_bst = converted_st.split("|")[-1].strip()
+            else:
+                raw_pub_bst = fallback_bst_now
+
+        raw_age = (matched_raw or {}).get("age_human", "")
+        if "," in raw_pub_bst:
+            bst_date_part, bst_time_part = [p.strip() for p in raw_pub_bst.split(",", 1)]
+        else:
+            bst_date_part, bst_time_part = raw_pub_bst, ""
+
+        item_copy["source_name"] = raw_source
+        item_copy["bst_datetime"] = raw_pub_bst
+        item_copy["bst_date"] = bst_date_part
+        item_copy["bst_time"] = bst_time_part
+        item_copy["age_human"] = raw_age
+        item_copy["source_time"] = f"{raw_source} • {raw_pub_bst}" + (f" ({raw_age})" if raw_age and raw_age not in raw_pub_bst else "")
         analyzed_news.append(item_copy)
 
     analyzed_news.sort(
@@ -179,7 +253,6 @@ def _prepare_report_view_model(
         reverse=True,
     )
 
-    # Build Chart 1 Data: Horizontal Bar Chart of the 4 Gold Impact Wedges (-100 to +100)
     wedges: List[Dict[str, Any]] = list(analysis.get("wedge_breakdown") or [])
     wedge_labels: List[str] = []
     wedge_scores: List[float] = []
@@ -188,8 +261,7 @@ def _prepare_report_view_model(
 
     for idx, w in enumerate(wedges, start=1):
         pct = w.get("weight_percentage", 0)
-        name = w.get("wedge_name", f"Wedge {idx}")
-        # Create concise chart label
+        name = w.get("wedge_name", f"Factor {idx}")
         short_label = name.split("(")[0].strip()
         if len(short_label) > 42:
             short_label = short_label[:40] + "…"
@@ -198,16 +270,15 @@ def _prepare_report_view_model(
         score = round(float(w.get("net_sentiment_score", 0.0)), 1)
         wedge_scores.append(score)
         if score > 5.0:
-            wedge_colors.append("rgba(16, 185, 129, 0.75)")
-            wedge_borders.append("#10b981")
+            wedge_colors.append("rgba(27, 107, 69, 0.78)")
+            wedge_borders.append("#1B6B45")
         elif score < -5.0:
-            wedge_colors.append("rgba(239, 68, 68, 0.75)")
-            wedge_borders.append("#ef4444")
+            wedge_colors.append("rgba(168, 40, 40, 0.78)")
+            wedge_borders.append("#A82828")
         else:
-            wedge_colors.append("rgba(245, 158, 11, 0.75)")
-            wedge_borders.append("#f59e0b")
+            wedge_colors.append("rgba(180, 123, 28, 0.78)")
+            wedge_borders.append("#B47B1C")
 
-    # Build Chart 2 Data: Doughnut Chart of Weighted Bullish Gold vs. Bearish Gold vs. Neutral news distribution
     weighted_dist = {"BULLISH GOLD": 0, "BEARISH GOLD": 0, "NEUTRAL": 0}
     count_dist = {"BULLISH GOLD": 0, "BEARISH GOLD": 0, "NEUTRAL": 0}
 
@@ -224,13 +295,31 @@ def _prepare_report_view_model(
         k: round(v / total_wt * 100.0, 1) for k, v in weighted_dist.items()
     }
 
-    # Compute sentiment gauge position (0% to 100% across [-100, +100] scale)
     weighted_score = float(analysis.get("weighted_sentiment_score", 0.0))
     sentiment_gauge_pct = max(2.0, min(98.0, round((weighted_score + 100.0) / 2.0, 1)))
 
-    gold_calendar = payload.get("gold_economic_calendar") or {
+    raw_cal = dict(payload.get("gold_economic_calendar") or {
         "source_status": "unavailable",
-        "target_pair": "XAUUSD / COMEX GC=F (USD-Denominated Gold Only)",
+        "target_pair": "XAUUSD / COMEX GC=F",
+        "total_gold_events": 0,
+        "high_impact_count": 0,
+        "medium_impact_count": 0,
+        "next_major_gold_catalyst": "N/A",
+        "calendar_macro_tilt": "NEUTRAL",
+        "events": [],
+    })
+    raw_cal["next_major_gold_catalyst"] = _convert_any_utc_to_bst(raw_cal.get("next_major_gold_catalyst", "N/A"))
+    cal_events_bst: List[Dict[str, Any]] = []
+    for ev in raw_cal.get("events") or []:
+        ev_copy = dict(ev)
+        ev_copy["date_utc"] = _convert_any_utc_to_bst(ev_copy.get("date_utc", "")) or _convert_any_utc_to_bst(ev_copy.get("date_iso", ""))
+        cal_events_bst.append(ev_copy)
+    raw_cal["events"] = cal_events_bst
+    gold_calendar = raw_cal
+    if False:
+        gold_calendar = {
+        "source_status": "unavailable",
+        "target_pair": "XAUUSD / COMEX GC=F",
         "total_gold_events": 0,
         "high_impact_count": 0,
         "medium_impact_count": 0,
@@ -243,6 +332,7 @@ def _prepare_report_view_model(
     code_users = get_all_users()
 
     return {
+        "generated_at_bst": _convert_any_utc_to_bst(payload.get("generated_at_bst") or payload.get("generated_at_utc") or ""),
         "bias_meta": bias_meta,
         "confluence_meta": confluence_meta,
         "thesis_bullets": thesis_bullets,
@@ -272,9 +362,9 @@ def _prepare_report_view_model(
         "chart_doughnut_json": json.dumps(
             {
                 "labels": [
-                    f"Bullish Gold ({count_dist['BULLISH GOLD']} items | {doughnut_pcts['BULLISH GOLD']}%)",
-                    f"Bearish Gold ({count_dist['BEARISH GOLD']} items | {doughnut_pcts['BEARISH GOLD']}%)",
-                    f"Neutral ({count_dist['NEUTRAL']} items | {doughnut_pcts['NEUTRAL']}%)",
+                    f"Bullish ({count_dist['BULLISH GOLD']} stories | {doughnut_pcts['BULLISH GOLD']}%)",
+                    f"Bearish ({count_dist['BEARISH GOLD']} stories | {doughnut_pcts['BEARISH GOLD']}%)",
+                    f"Neutral ({count_dist['NEUTRAL']} stories | {doughnut_pcts['NEUTRAL']}%)",
                 ],
                 "weights": [
                     weighted_dist["BULLISH GOLD"],
@@ -292,38 +382,40 @@ def _prepare_report_view_model(
 
 
 _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>XAUUSD / GC=F Institutional Gold Intraday Sentiment Terminal</title>
+  <title>XAUUSD • Gold Desk Morning &amp; Intraday Research Brief</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <!-- Google Fonts: Newsreader (Editorial Serif), Plus Jakarta Sans (Clean UI), IBM Plex Mono (Numbers) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            terminal: {
-              bg: '#0b0f19',
-              card: '#111827',
-              panel: '#161f33',
-              border: '#1f2d47',
-              gold: '#f59e0b',
-              bull: '#10b981',
-              bear: '#ef4444'
+            cream: {
+              bg: '#F7F3EB',
+              card: '#FFFDF9',
+              sub: '#F0EAE0',
+              border: '#DED6C6',
+              ink: '#1F1C18',
+              muted: '#655D52',
+              brass: '#9A6B16',
+              bull: '#1B6B45',
+              bear: '#A82828'
             }
           },
           fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
+            serif: ['Newsreader', 'Georgia', 'Cambria', 'serif'],
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace']
           }
         }
       }
@@ -331,69 +423,78 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
   </script>
   <style>
     body {
-      background-color: #0b0f19;
-      color: #f1f5f9;
-      font-family: 'Inter', sans-serif;
-      background-image:
-        radial-gradient(circle at 12% 0%, rgba(245, 158, 11, 0.08), transparent 32%),
-        radial-gradient(circle at 88% 4%, rgba(16, 185, 129, 0.05), transparent 28%);
+      background-color: #F7F3EB;
+      color: #1F1C18;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .terminal-card {
-      background: linear-gradient(180deg, rgba(22, 31, 51, 0.88) 0%, rgba(17, 24, 39, 0.94) 100%);
-      border: 1px solid #1f2d47;
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.65);
+    .paper-card {
+      background-color: #FFFDF9;
+      border: 1px solid #DED6C6;
+      box-shadow: 0 2px 6px rgba(31, 28, 24, 0.04);
     }
-    .gold-glow {
-      box-shadow: 0 0 28px -6px rgba(245, 158, 11, 0.25);
+    .paper-inset {
+      background-color: #F3EDE2;
+      border: 1px solid #E2D9C8;
+    }
+    .editorial-heading {
+      font-family: 'Newsreader', Georgia, serif;
+      letter-spacing: -0.015em;
     }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #0b0f19; }
-    ::-webkit-scrollbar-thumb { background: #1f2d47; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    ::-webkit-scrollbar-track { background: #F7F3EB; }
+    ::-webkit-scrollbar-thumb { background: #CFC5B3; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #B5A892; }
   </style>
 </head>
-<body class="min-h-screen antialiased selection:bg-amber-500/30 selection:text-amber-200">
+<body class="min-h-screen antialiased selection:bg-[#E6CFA0] selection:text-[#1F1C18]">
 
   <!-- ===================================================================== -->
-  <!-- MULTI-USER & ADMIN WEB PORTAL TOP BAR (SAVED IN CODE • NO DATABASE)   -->
+  <!-- TOP NAVIGATION BAR (WARM CREAM EDITORIAL HEADER)                      -->
   <!-- ===================================================================== -->
-  <nav id="portalTopNav" class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-amber-500/30 px-4 sm:px-6 lg:px-8 py-2.5">
-    <div class="max-w-[1520px] mx-auto flex flex-wrap items-center justify-between gap-3">
+  <nav id="portalTopNav" class="sticky top-0 z-40 bg-[#FAF6EE]/95 backdrop-blur-sm border-b border-[#DED6C6] px-4 sm:px-6 lg:px-8 py-3">
+    <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3 flex-wrap">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          WEB PORTAL LIVE (API-ONLINE &amp; API-OFFLINE READY)
-        </span>
-        <span id="currentUserBadge" class="px-2.5 py-1 rounded-md text-xs font-mono bg-slate-900 text-slate-200 border border-slate-700">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded bg-[#1F1C18] text-[#FAF6EE] font-serif font-bold text-sm flex items-center justify-center">
+            Au
+          </span>
+          <div>
+            <div class="font-serif font-bold text-base sm:text-lg text-[#1F1C18] leading-tight">
+              XAUUSD Gold Desk
+            </div>
+            <div class="text-[11px] font-medium text-[#9A6B16] leading-tight">
+              Created by Arnob &bull; Computer Science Department, BRAC University
+            </div>
+          </div>
+        </div>
+        <span class="text-[#CFC5B3]">|</span>
+        <span id="currentUserBadge" class="px-2.5 py-1 rounded text-xs font-medium bg-[#F0EAE0] text-[#4A433B] border border-[#DED6C6]">
           Not Signed In
-        </span>
-        <span class="hidden md:inline-block text-[11px] font-mono text-slate-400">
-          Storage: <strong class="text-amber-300">Code-Persisted (`users_store.py`) • No Database Needed</strong>
         </span>
       </div>
 
-      <div class="flex items-center gap-2.5 flex-wrap font-mono text-xs">
-        <!-- Refresh Live Gold Data (Works with or without API key) -->
+      <div class="flex items-center gap-2.5 flex-wrap text-xs font-medium">
+        <!-- Refresh Market Data -->
         <button id="btnRefreshLive" type="button" onclick="window.triggerGoldPortalRefresh(false)"
-                class="px-3 py-1.5 rounded-lg font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 transition flex items-center gap-1.5">
-          <span id="refreshSpinner" class="hidden animate-spin">&#9696;</span>
-          <span>&#8635; Refresh Live Gold (AI / Auto-Fallback)</span>
+                class="px-3.5 py-1.5 rounded-md font-semibold bg-[#1F1C18] hover:bg-[#36312A] text-[#FAF6EE] transition flex items-center gap-1.5 shadow-sm">
+          <span id="refreshSpinner" class="hidden animate-spin">&#8635;</span>
+          <span>Update Market Data</span>
         </button>
 
         <button id="btnRefreshQuant" type="button" onclick="window.triggerGoldPortalRefresh(true)"
-                title="Refresh live Gold prices, 18 breaking headlines &amp; Forex Factory Calendar using the built-in Quantitative Engine (Zero API Key Needed)"
-                class="px-3 py-1.5 rounded-lg font-semibold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40 transition">
-          &#9889; Instant API-Free Refresh
+                title="Quickly refresh live prices and economic calendar"
+                class="px-3 py-1.5 rounded-md font-medium bg-[#F0EAE0] hover:bg-[#E5DEC9] text-[#1F1C18] border border-[#D5CBB8] transition">
+          Quick Quote Refresh
         </button>
 
-        <!-- Admin-Only Button (Hidden for normal users, shown ONLY for the single Administrator) -->
+        <!-- Admin-Only Button (Shown ONLY when signed in as arnob) -->
         <button id="btnOpenAdminModal" type="button" onclick="window.openAdminModal()"
-                class="hidden px-3.5 py-1.5 rounded-lg font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 transition">
-          &#9881; Admin User Manager (<span id="navUserCount">0</span> Users)
+                class="hidden px-3.5 py-1.5 rounded-md font-semibold bg-[#9A6B16] hover:bg-[#825910] text-white transition shadow-sm">
+          Manage Members (<span id="navUserCount">0</span>)
         </button>
 
         <button id="btnLogout" type="button" onclick="window.logoutGoldPortal()"
-                class="px-3 py-1.5 rounded-lg font-semibold bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-300 border border-slate-700 hover:border-red-500/40 transition">
+                class="px-3 py-1.5 rounded-md font-medium bg-[#FFFDF9] hover:bg-[#FAEDED] text-[#5C5346] hover:text-[#A82828] border border-[#DED6C6] transition">
           Sign Out
         </button>
       </div>
@@ -401,157 +502,137 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
   </nav>
 
   <!-- ===================================================================== -->
-  <!-- LOGIN GATE OVERLAY (SHOWN UNTIL ADMIN OR CREATED USER LOGS IN)        -->
+  <!-- SIGN-IN OVERLAY (CLEAN CREAM CARD, MANUAL ACCESS ONLY)                -->
   <!-- ===================================================================== -->
-  <div id="loginOverlay" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-lg flex items-center justify-center p-4">
-    <div class="terminal-card rounded-2xl max-w-md w-full p-6 sm:p-8 border-t-4 border-t-amber-500 shadow-2xl space-y-5">
-      <div class="flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-400 font-mono font-extrabold text-xl">
+  <div id="loginOverlay" class="fixed inset-0 z-50 bg-[#F7F3EB]/95 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="paper-card rounded-xl max-w-md w-full p-7 sm:p-8 border-t-4 border-t-[#9A6B16] shadow-xl space-y-5">
+      <div class="flex items-center gap-3.5 border-b border-[#EAE3D5] pb-4">
+        <div class="w-11 h-11 rounded-lg bg-[#1F1C18] text-[#FAF6EE] flex items-center justify-center font-serif font-bold text-xl">
           Au
         </div>
         <div>
-          <span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded">
-            XAUUSD / GC=F WEB TERMINAL
-          </span>
-          <h2 class="text-xl font-extrabold text-white mt-0.5">
-            Institutional Portal Sign-In
+          <div class="text-[11px] font-semibold uppercase tracking-widest text-[#9A6B16]">
+            Precious Metals Research Desk
+          </div>
+          <h2 class="editorial-heading text-2xl font-bold text-[#1F1C18] mt-0.5">
+            Member Sign In
           </h2>
         </div>
       </div>
 
-      <p class="text-xs text-slate-400 leading-relaxed">
-        Sign in with the single <strong class="text-amber-300">Administrator</strong> account (to manage users &amp; view the terminal) or any <strong class="text-emerald-300">User</strong> account stored in <code class="text-slate-200">users_store.py</code>.
+      <p class="text-xs sm:text-sm text-[#5C5346] leading-relaxed">
+        Please enter your desk credentials to view today&rsquo;s Gold (<strong class="text-[#1F1C18]">XAUUSD / GC=F</strong>) research brief, live cross-asset quotes, and economic calendar.
       </p>
 
-      <div id="loginErrorBox" class="hidden rounded-lg bg-red-500/15 border border-red-500/40 p-3 text-xs font-mono text-red-300"></div>
+      <div id="loginErrorBox" class="hidden rounded-md bg-[#FAEDED] border border-[#E8C3C3] p-3 text-xs font-medium text-[#A82828]"></div>
 
       <form id="loginForm" onsubmit="return window.handlePortalLogin(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Username</label>
-          <input id="loginUsername" type="text" required autocomplete="username" placeholder="e.g. admin or trader1"
-                 class="w-full rounded-lg bg-slate-900 border border-slate-700 focus:border-amber-400 focus:outline-none px-3.5 py-2.5 text-sm font-mono text-white" />
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#4A433B] mb-1.5">Username</label>
+          <input id="loginUsername" type="text" required autocomplete="username" placeholder="Enter your username"
+                 class="w-full rounded-md bg-[#FFFDF9] border border-[#CFC5B3] focus:border-[#9A6B16] focus:outline-none px-3.5 py-2.5 text-sm text-[#1F1C18]" />
         </div>
         <div>
-          <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Password</label>
-          <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Enter password"
-                 class="w-full rounded-lg bg-slate-900 border border-slate-700 focus:border-amber-400 focus:outline-none px-3.5 py-2.5 text-sm font-mono text-white" />
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#4A433B] mb-1.5">Password</label>
+          <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Enter your password"
+                 class="w-full rounded-md bg-[#FFFDF9] border border-[#CFC5B3] focus:border-[#9A6B16] focus:outline-none px-3.5 py-2.5 text-sm text-[#1F1C18]" />
         </div>
         <button type="submit"
-                class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-extrabold text-sm tracking-wide shadow-lg shadow-amber-500/20 transition">
-          Access Gold Sentiment Terminal &rarr;
+                class="w-full py-2.5 px-4 rounded-md bg-[#1F1C18] hover:bg-[#36312A] text-[#FAF6EE] font-semibold text-sm tracking-wide shadow-sm transition">
+          Sign In to Gold Desk &rarr;
         </button>
       </form>
 
-      <!-- Quick One-Click Credential Fillers for Convenience -->
-      <div class="pt-3 border-t border-slate-800 space-y-2">
-        <div class="text-[11px] font-mono text-slate-400 flex items-center justify-between">
-          <span>Code-Stored Accounts (<code class="text-amber-300">users_store.py</code>):</span>
-          <span class="text-emerald-400">Zero-DB Mode</span>
+      <div class="pt-3 border-t border-[#EAE3D5] space-y-1 text-xs text-[#786E60]">
+        <div class="font-semibold text-[#1F1C18]">
+          Created by Arnob &bull; Computer Science Department, BRAC University
         </div>
-        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
-          <button type="button" onclick="window.fillLogin('admin', 'admin123')"
-                  class="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-left truncate">
-            &#128081; Admin: <strong>admin</strong> / admin123
-          </button>
-          <button type="button" onclick="window.fillLogin('trader1', 'gold123')"
-                  class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-left truncate">
-            &#128100; User: <strong>trader1</strong> / gold123
-          </button>
+        <div class="flex items-center justify-between text-[11px]">
+          <span>Private Desk Access</span>
+          <span>Contact Administrator for Registration</span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================================================================== -->
-  <!-- ADMINISTRATOR USER MANAGEMENT MODAL (ONLY FOR SINGLE ADMIN)           -->
+  <!-- MEMBER DIRECTORY MODAL (VISIBLE ONLY TO ADMIN: arnob)                 -->
   <!-- ===================================================================== -->
-  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-    <div class="terminal-card rounded-2xl max-w-3xl w-full p-6 border-t-4 border-t-amber-500 shadow-2xl space-y-5 my-8">
-      <div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-[#1F1C18]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="paper-card rounded-xl max-w-3xl w-full p-6 sm:p-7 border-t-4 border-t-[#9A6B16] shadow-2xl space-y-5 my-8">
+      <div class="flex items-start justify-between gap-4 border-b border-[#EAE3D5] pb-4">
         <div>
-          <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded">
-              SINGLE ADMINISTRATOR CONTROL PANEL
-            </span>
-            <span class="px-2 py-0.5 text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded">
-              Persisted in Code: users_store.py
-            </span>
-          </div>
-          <h3 class="text-lg font-extrabold text-white mt-1">
-            Create &amp; Manage Portal Users (No Database Required)
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-[#9A6B16]">
+            Administrator Control Panel
+          </span>
+          <h3 class="editorial-heading text-xl font-bold text-[#1F1C18] mt-0.5">
+            Manual Member Registration &amp; Access List
           </h3>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Every user created or updated below is written directly into <code class="text-amber-300">users_store.py</code> so all users can sign in and view the Gold Terminal page.
+          <p class="text-xs text-[#655D52] mt-0.5">
+            Register members manually below so they can sign in and read the Gold research report.
           </p>
         </div>
         <button type="button" onclick="window.closeAdminModal()"
-                class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs">
+                class="px-3 py-1.5 rounded-md bg-[#F0EAE0] hover:bg-[#E2D9C8] text-[#1F1C18] font-medium text-xs">
           &#10005; Close
         </button>
       </div>
 
-      <div id="adminStatusBanner" class="hidden rounded-lg p-3 text-xs font-mono border"></div>
+      <div id="adminStatusBanner" class="hidden rounded-md p-3 text-xs font-medium border"></div>
 
-      <!-- Create / Update User Form -->
+      <!-- Manual Member Registration Form -->
       <form id="adminCreateUserForm" onsubmit="return window.handleAdminCreateUser(event)"
-            class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-3">
-        <div class="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
-          + Create New User Account (or Update Existing Username)
+            class="paper-inset rounded-lg p-4 space-y-3.5">
+        <div class="text-xs font-bold uppercase tracking-wider text-[#4A433B]">
+          + Register New Member (or Update Password)
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-[11px] font-mono text-slate-400 mb-1">Username *</label>
-            <input id="newUsername" type="text" required placeholder="e.g. trader2"
-                   class="w-full rounded-lg bg-slate-950 border border-slate-700 focus:border-amber-400 focus:outline-none px-3 py-2 text-xs font-mono text-white" />
+            <label class="block text-xs font-medium text-[#4A433B] mb-1">Username *</label>
+            <input id="newUsername" type="text" required placeholder="e.g. rahim"
+                   class="w-full rounded-md bg-[#FFFDF9] border border-[#CFC5B3] focus:border-[#9A6B16] focus:outline-none px-3 py-2 text-xs text-[#1F1C18]" />
           </div>
           <div>
-            <label class="block text-[11px] font-mono text-slate-400 mb-1">Password *</label>
-            <input id="newPassword" type="text" required placeholder="e.g. xauusd99"
-                   class="w-full rounded-lg bg-slate-950 border border-slate-700 focus:border-amber-400 focus:outline-none px-3 py-2 text-xs font-mono text-white" />
+            <label class="block text-xs font-medium text-[#4A433B] mb-1">Password *</label>
+            <input id="newPassword" type="text" required placeholder="Enter password"
+                   class="w-full rounded-md bg-[#FFFDF9] border border-[#CFC5B3] focus:border-[#9A6B16] focus:outline-none px-3 py-2 text-xs text-[#1F1C18]" />
           </div>
           <div>
-            <label class="block text-[11px] font-mono text-slate-400 mb-1">Display Name / Desk Role</label>
-            <input id="newDisplayName" type="text" placeholder="e.g. London Bullion Desk"
-                   class="w-full rounded-lg bg-slate-950 border border-slate-700 focus:border-amber-400 focus:outline-none px-3 py-2 text-xs font-mono text-white" />
+            <label class="block text-xs font-medium text-[#4A433B] mb-1">Full Name / Desk Note</label>
+            <input id="newDisplayName" type="text" placeholder="e.g. Senior Trader"
+                   class="w-full rounded-md bg-[#FFFDF9] border border-[#CFC5B3] focus:border-[#9A6B16] focus:outline-none px-3 py-2 text-xs text-[#1F1C18]" />
           </div>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <span class="text-[11px] font-mono text-slate-400">
-            Single Admin Account (<code class="text-amber-300">admin</code>) is permanently locked as the sole Administrator.
+          <span class="text-xs text-[#655D52]">
+            Administrator (<strong class="text-[#1F1C18]">arnob</strong>) has permanent full control.
           </span>
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="window.downloadUsersStorePy()"
-                    title="Download updated users_store.py source file directly"
-                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs">
-              &#128190; Export `users_store.py`
-            </button>
-            <button type="submit"
-                    class="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono font-bold text-xs shadow">
-              + Save User to Code
-            </button>
-          </div>
+          <button type="submit"
+                  class="px-4 py-2 rounded-md bg-[#1B6B45] hover:bg-[#145235] text-white font-semibold text-xs shadow-sm transition">
+            + Register Member
+          </button>
         </div>
       </form>
 
-      <!-- Existing Users Table -->
-      <div class="border border-slate-800 rounded-xl overflow-hidden">
-        <div class="bg-slate-900/90 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
-          <span class="font-bold text-slate-200">Code-Persisted User Directory (<code class="text-amber-300">USERS_LIST</code>)</span>
-          <span class="text-slate-400">1 Admin + <strong id="modalUserCount" class="text-amber-400">0</strong> Users</span>
+      <!-- Registered Members Table -->
+      <div class="border border-[#DED6C6] rounded-lg overflow-hidden bg-[#FFFDF9]">
+        <div class="bg-[#F0EAE0] px-4 py-2.5 border-b border-[#DED6C6] flex items-center justify-between text-xs">
+          <span class="font-bold text-[#1F1C18]">Authorized Desk Accounts</span>
+          <span class="text-[#655D52]">1 Administrator &bull; <strong id="modalUserCount" class="text-[#1F1C18]">0</strong> Registered Members</span>
         </div>
         <div class="overflow-x-auto max-h-72 overflow-y-auto">
-          <table class="w-full text-left border-collapse text-xs font-mono">
+          <table class="w-full text-left border-collapse text-xs">
             <thead>
-              <tr class="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase text-[10px]">
-                <th class="py-2.5 px-3">Username</th>
-                <th class="py-2.5 px-3">Password</th>
-                <th class="py-2.5 px-3">Display Name</th>
-                <th class="py-2.5 px-3">Role</th>
-                <th class="py-2.5 px-3 text-center">Status</th>
-                <th class="py-2.5 px-3 text-right">Admin Actions</th>
+              <tr class="bg-[#FAF6EE] text-[#655D52] border-b border-[#DED6C6] uppercase text-[11px]">
+                <th class="py-2.5 px-3.5">Username</th>
+                <th class="py-2.5 px-3.5">Password</th>
+                <th class="py-2.5 px-3.5">Member Name</th>
+                <th class="py-2.5 px-3.5">Role</th>
+                <th class="py-2.5 px-3.5 text-center">Status</th>
+                <th class="py-2.5 px-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="adminUsersTableBody" class="divide-y divide-slate-800/80">
+            <tbody id="adminUsersTableBody" class="divide-y divide-[#EAE3D5]">
             </tbody>
           </table>
         </div>
@@ -559,61 +640,145 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <div class="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <!-- ===================================================================== -->
+  <!-- MAIN EDITORIAL PAGE CONTAINER                                         -->
+  <!-- ===================================================================== -->
+  <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     <!-- =================================================================== -->
-    <!-- TOP INSTITUTIONAL TERMINAL HEADER                                   -->
+    <!-- EDITORIAL MASTHEAD                                                  -->
     <!-- =================================================================== -->
-    <header class="terminal-card rounded-xl px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-t-2 border-t-amber-500">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 font-mono font-bold text-lg shadow-inner">
-          Au
+    <header class="paper-card rounded-xl px-6 py-5 border-t-4 border-t-[#1F1C18] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2.5 flex-wrap text-xs font-semibold uppercase tracking-widest text-[#9A6B16]">
+          <span>Spot Gold (XAUUSD) &amp; COMEX Futures (GC=F)</span>
+          <span>&bull;</span>
+          <span>Intraday Macro &amp; Fundamental Desk Note</span>
         </div>
-        <div>
-          <div class="flex items-center gap-2.5 flex-wrap">
-            <span class="px-2 py-0.5 text-[11px] font-mono font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded">
-              XAUUSD / COMEX GC=F
-            </span>
-            <span class="text-xs font-mono text-slate-400">
-              PRECIOUS METALS QUANTITATIVE DESK
-            </span>
-          </div>
-          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white mt-0.5">
-            Gold Intraday News &amp; Macro Correlation Terminal
-          </h1>
+        <h1 class="editorial-heading text-2xl sm:text-3xl font-bold text-[#1F1C18] mt-1">
+          Gold Daily Bias, Macro Drivers &amp; Economic Calendar
+        </h1>
+        <div class="mt-2 inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-md bg-[#FBF3E0] border border-[#E6CFA0] text-xs font-medium text-[#1F1C18]">
+          <span class="font-bold text-[#8A5A0E]">Created by Arnob</span>
+          <span class="text-[#B5A892]">&bull;</span>
+          <span>Computer Science Department</span>
+          <span class="text-[#B5A892]">&bull;</span>
+          <span class="font-semibold">BRAC University</span>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-4 text-xs font-mono">
-        <div class="bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2">
-          <div class="text-slate-400 text-[10px] uppercase tracking-wider">Snapshot Timestamp (UTC)</div>
-          <div class="text-slate-200 font-semibold mt-0.5">{{ payload.generated_at_utc }}</div>
+      <div class="flex flex-wrap items-center gap-3 text-xs">
+        <div class="paper-inset rounded-lg px-3.5 py-2">
+          <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Last Updated (BST &bull; Bangladesh Standard Time)</div>
+          <div class="text-[#1F1C18] font-mono font-semibold mt-0.5">{{ vm.generated_at_bst }}</div>
         </div>
-        <div class="bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2">
-          <div class="text-slate-400 text-[10px] uppercase tracking-wider">Analysis Engine</div>
-          <div class="text-amber-400 font-semibold mt-0.5">{{ analysis.analysis_engine or "gemini-3.5-flash" }}</div>
+        <div class="paper-inset rounded-lg px-3.5 py-2">
+          <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">Analysis Engine</div>
+          <div class="text-[#9A6B16] font-mono font-semibold mt-0.5">{{ analysis.analysis_engine or "gemini-3.5-flash" }}</div>
         </div>
-        <div class="bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2">
-          <div class="text-slate-400 text-[10px] uppercase tracking-wider">Feed Coverage</div>
-          <div class="text-emerald-400 font-semibold mt-0.5">
-            {{ payload.ingestion_diagnostics.active_feeds_returning_data }}/{{ payload.ingestion_diagnostics.total_feeds_queried }} Active ({{ payload.fetch_latency_seconds }}s)
+        <div class="paper-inset rounded-lg px-3.5 py-2">
+          <div class="text-[#786E60] text-[10px] uppercase font-semibold tracking-wider">News Sources Checked</div>
+          <div class="text-[#1B6B45] font-mono font-semibold mt-0.5">
+            {{ payload.ingestion_diagnostics.active_feeds_returning_data }}/{{ payload.ingestion_diagnostics.total_feeds_queried }} Active Feeds
           </div>
         </div>
       </div>
     </header>
 
     <!-- =================================================================== -->
-    <!-- 1. TOP LIVE MARKET RIBBON (GC=F, DXY, ^TNX, ^VIX, GLD)              -->
+    <!-- 1. HERO DESK VERDICT & CONVICTION SUMMARY                           -->
     <!-- =================================================================== -->
-    <section aria-label="Live Gold and Macro Correlation Ribbon">
-      <div class="flex items-center justify-between mb-2.5 px-1">
-        <h2 class="text-xs font-mono uppercase tracking-widest text-amber-400/90 font-semibold flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          Live Cross-Asset Gold Correlation Ribbon
+    <section aria-label="Daily Desk Verdict" class="paper-card rounded-xl p-6 border-l-4"
+             style="border-left-color: {{ vm.bias_meta.accent_hex }};">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+
+        <!-- Left: Directional Call -->
+        <div class="lg:col-span-4 flex flex-col justify-center space-y-2.5 border-b lg:border-b-0 lg:border-r border-[#EAE3D5] pb-5 lg:pb-0 lg:pr-6">
+          <div class="text-xs font-semibold uppercase tracking-wider text-[#655D52]">
+            Current Desk Call
+          </div>
+          <div class="inline-flex items-center gap-2.5 self-start px-4 py-2.5 rounded-lg border-2 {{ vm.bias_meta.bg_class }}">
+            <span class="w-3 h-3 rounded-full {{ vm.bias_meta.dot_class }}"></span>
+            <span class="font-serif text-xl sm:text-2xl font-bold tracking-tight">
+              {{ vm.bias_meta.label }}
+            </span>
+          </div>
+          <div class="pt-1">
+            <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold border {{ vm.confluence_meta.badge_class }}">
+              {{ vm.confluence_meta.label }}
+            </span>
+            <p class="text-xs text-[#5C5346] mt-1.5 leading-relaxed">
+              {{ vm.confluence_meta.description }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Middle: Net Sentiment Balance (-100 to +100) -->
+        <div class="lg:col-span-4 flex flex-col justify-center space-y-3 border-b lg:border-b-0 lg:border-r border-[#EAE3D5] pb-5 lg:pb-0 lg:px-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-[#655D52]">
+              Net Fundamental Balance
+            </span>
+            <span class="text-xl font-mono font-bold
+              {% if analysis.weighted_sentiment_score > 10 %}text-[#1B6B45]
+              {% elif analysis.weighted_sentiment_score < -10 %}text-[#A82828]
+              {% else %}text-[#9A6B16]{% endif %}">
+              {{ "%+.1f"|format(analysis.weighted_sentiment_score) }} <span class="text-xs font-normal text-[#786E60]">/ 100</span>
+            </span>
+          </div>
+
+          <div class="relative h-3.5 w-full rounded-full bg-[#EFE9DD] border border-[#D5CBB8] overflow-hidden">
+            <div class="absolute inset-0 flex">
+              <div class="w-1/2 bg-gradient-to-r from-[#A82828]/25 via-[#A82828]/10 to-transparent border-r border-[#B5A892]"></div>
+              <div class="w-1/2 bg-gradient-to-r from-transparent via-[#1B6B45]/10 to-[#1B6B45]/25"></div>
+            </div>
+            <div class="absolute top-0 bottom-0 w-2.5 -ml-1.5 rounded-full bg-[#1F1C18] border-2 border-[#FFFDF9] shadow"
+                 style="left: {{ vm.sentiment_gauge_pct }}%;"></div>
+          </div>
+
+          <div class="flex justify-between text-[11px] font-medium text-[#655D52]">
+            <span class="text-[#A82828]">&larr; Bearish (Strong USD / Yields)</span>
+            <span>Neutral (0)</span>
+            <span class="text-[#1B6B45]">Bullish (Safe-Haven / Rate Cuts) &rarr;</span>
+          </div>
+        </div>
+
+        <!-- Right: Desk Conviction Level (0% - 100%) -->
+        <div class="lg:col-span-4 flex flex-col justify-center space-y-3 lg:pl-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-[#655D52]">
+              Desk Conviction Level
+            </span>
+            <span class="text-xl font-mono font-bold text-[#1F1C18]">
+              {{ analysis.confidence_score }}%
+            </span>
+          </div>
+
+          <div class="w-full h-3.5 bg-[#EFE9DD] rounded-full border border-[#D5CBB8] overflow-hidden p-0.5">
+            <div class="h-full rounded-full {{ vm.bias_meta.bar_class }} transition-all duration-500"
+                 style="width: {{ analysis.confidence_score }}%;"></div>
+          </div>
+
+          <div class="flex justify-between text-[11px] font-medium text-[#655D52]">
+            <span>Low (&lt;40%)</span>
+            <span>Moderate (40–75%)</span>
+            <span class="text-[#1F1C18] font-semibold">High Alignment (80%+)</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 2. LIVE MARKET QUOTES & CORRELATION STRIP                           -->
+    <!-- =================================================================== -->
+    <section aria-label="Live Market Quotes">
+      <div class="flex flex-wrap items-center justify-between mb-2.5 px-1 gap-2">
+        <h2 class="editorial-heading text-lg font-bold text-[#1F1C18]">
+          Live Cross-Asset Quotes &amp; Gold Relationship
         </h2>
-        <span class="text-xs font-mono text-slate-400">
-          Inverse Drivers: <strong class="text-slate-300">DXY</strong> &amp; <strong class="text-slate-300">^TNX (10Y Yield)</strong> |
-          Safe-Haven &amp; Flow Proxies: <strong class="text-slate-300">^VIX</strong> &amp; <strong class="text-slate-300">GLD</strong>
+        <span class="text-xs text-[#655D52]">
+          Note: Rising <strong class="text-[#1F1C18]">DXY</strong> and <strong class="text-[#1F1C18]">10Y Yields (^TNX)</strong> typically pressure Gold; rising <strong class="text-[#1F1C18]">VIX</strong> and <strong class="text-[#1F1C18]">GLD</strong> support Gold.
         </span>
       </div>
 
@@ -622,23 +787,23 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         {% set is_primary = (key == 'GOLD_FUTURES') %}
         {% set price_up = (item.change is not none and item.change >= 0) %}
         {% set gold_eff = item.gold_directional_effect %}
-        <div class="terminal-card rounded-xl p-4 relative overflow-hidden transition duration-200 hover:border-amber-500/50 {{ 'border-amber-500/60 gold-glow' if is_primary else '' }}">
+        <div class="paper-card rounded-xl p-4 transition duration-150 {{ 'border-2 border-[#9A6B16] bg-[#FFFDF7]' if is_primary else '' }}">
           <div class="flex items-start justify-between gap-2">
             <div>
-              <div class="text-[11px] font-mono font-bold uppercase tracking-wider {{ 'text-amber-400' if is_primary else 'text-slate-400' }}">
+              <div class="text-xs font-mono font-bold uppercase {{ 'text-[#9A6B16]' if is_primary else 'text-[#655D52]' }}">
                 {{ item.display_symbol }}
               </div>
-              <div class="text-xs text-slate-300 font-medium truncate max-w-[180px]" title="{{ item.label }}">
+              <div class="text-xs text-[#4A433B] font-medium truncate max-w-[180px]" title="{{ item.label }}">
                 {{ item.label }}
               </div>
             </div>
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold border
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold border
               {% if gold_eff == 'BULLISH GOLD' %}
-                bg-emerald-500/15 text-emerald-300 border-emerald-500/40
+                bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
               {% elif gold_eff == 'BEARISH GOLD' %}
-                bg-red-500/15 text-red-300 border-red-500/40
+                bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
               {% else %}
-                bg-amber-500/15 text-amber-300 border-amber-500/40
+                bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
               {% endif %}">
               {{ gold_eff }}
             </span>
@@ -646,32 +811,32 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
 
           {% if item.price is not none %}
           <div class="mt-3 flex items-baseline justify-between">
-            <div class="text-2xl font-mono font-extrabold tracking-tight text-white">
-              {% if item.unit == 'USD/oz' or item.unit == 'USD' %}${% endif %}{{ "{:,.2f}".format(item.price) if item.symbol != '^TNX' else "{:.3f}".format(item.price) }}<span class="text-xs font-normal text-slate-400 ml-1">{{ item.unit if item.unit not in ('USD', 'USD/oz') else ('/oz' if item.unit == 'USD/oz' else '') }}</span>
+            <div class="text-2xl font-mono font-semibold tracking-tight text-[#1F1C18]">
+              {% if item.unit == 'USD/oz' or item.unit == 'USD' %}${% endif %}{{ "{:,.2f}".format(item.price) if item.symbol != '^TNX' else "{:.3f}".format(item.price) }}<span class="text-xs font-normal text-[#786E60] ml-1">{{ item.unit if item.unit not in ('USD', 'USD/oz') else ('/oz' if item.unit == 'USD/oz' else '') }}</span>
             </div>
-            <div class="flex items-center gap-1 font-mono text-xs font-bold
+            <div class="flex items-center gap-0.5 font-mono text-xs font-semibold
               {% if is_primary or key == 'GLD_ETF' %}
-                {{ 'text-emerald-400' if price_up else 'text-red-400' }}
+                {{ 'text-[#1B6B45]' if price_up else 'text-[#A82828]' }}
               {% elif key in ('DXY_DOLLAR_INDEX', 'US_10Y_YIELD') %}
-                {{ 'text-red-400' if price_up else 'text-emerald-400' }}
+                {{ 'text-[#A82828]' if price_up else 'text-[#1B6B45]' }}
               {% else %}
-                {{ 'text-amber-300' if price_up else 'text-slate-300' }}
+                {{ 'text-[#9A6B16]' if price_up else 'text-[#655D52]' }}
               {% endif %}">
               <span>{{ '▲' if price_up else '▼' }}</span>
               <span>{{ "%+.2f"|format(item.change_pct) }}%</span>
             </div>
           </div>
 
-          <div class="mt-2.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>L: <strong class="text-slate-300">{{ "{:,.2f}".format(item.day_low) if item.symbol != '^TNX' else "{:.3f}".format(item.day_low) }}</strong></span>
-            <span>H: <strong class="text-slate-300">{{ "{:,.2f}".format(item.day_high) if item.symbol != '^TNX' else "{:.3f}".format(item.day_high) }}</strong></span>
-            <span>5d: <strong class="{{ 'text-emerald-400' if item.five_day_change_pct >= 0 else 'text-red-400' }}">{{ "%+.2f"|format(item.five_day_change_pct) }}%</strong></span>
+          <div class="mt-2.5 pt-2 border-t border-[#EAE3D5] flex items-center justify-between text-[11px] font-mono text-[#655D52]">
+            <span>Low: <strong class="text-[#1F1C18]">{{ "{:,.2f}".format(item.day_low) if item.symbol != '^TNX' else "{:.3f}".format(item.day_low) }}</strong></span>
+            <span>High: <strong class="text-[#1F1C18]">{{ "{:,.2f}".format(item.day_high) if item.symbol != '^TNX' else "{:.3f}".format(item.day_high) }}</strong></span>
+            <span>5d: <strong class="{{ 'text-[#1B6B45]' if item.five_day_change_pct >= 0 else 'text-[#A82828]' }}">{{ "%+.2f"|format(item.five_day_change_pct) }}%</strong></span>
           </div>
-          <p class="mt-2 text-[11px] text-slate-400 leading-snug line-clamp-2" title="{{ item.regime_signal }}">
+          <p class="mt-2 text-xs text-[#5C5346] leading-snug line-clamp-2" title="{{ item.regime_signal }}">
             {{ item.regime_signal }}
           </p>
           {% else %}
-          <div class="mt-4 text-lg font-mono text-amber-400">Live Quote Unavailable</div>
+          <div class="mt-4 text-sm font-medium text-[#9A6B16]">Quote Unavailable</div>
           {% endif %}
         </div>
         {% endfor %}
@@ -679,169 +844,81 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </section>
 
     <!-- =================================================================== -->
-    <!-- 2. HERO INTRADAY BIAS & CONFIDENCE BANNER                           -->
-    <!-- =================================================================== -->
-    <section aria-label="Hero Intraday Bias and Confidence Banner" class="terminal-card rounded-2xl p-6 border-l-4"
-             style="border-left-color: {{ vm.bias_meta.accent_hex }};">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-
-        <!-- Left: Large Color-Coded Bias Badge -->
-        <div class="lg:col-span-4 flex flex-col justify-center space-y-3 border-b lg:border-b-0 lg:border-r border-slate-800 pb-5 lg:pb-0 lg:pr-6">
-          <div class="text-xs font-mono uppercase tracking-widest text-slate-400">
-            Institutional Intraday Signal
-          </div>
-          <div class="inline-flex items-center gap-3 self-start px-5 py-3 rounded-xl border-2 shadow-lg {{ vm.bias_meta.bg_class }}">
-            <span class="w-3.5 h-3.5 rounded-full {{ vm.bias_meta.dot_class }} animate-ping"></span>
-            <span class="text-2xl sm:text-3xl font-mono font-extrabold tracking-tight">
-              {{ vm.bias_meta.label }}
-            </span>
-          </div>
-          <div class="pt-1">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-semibold border {{ vm.confluence_meta.badge_class }}">
-              {{ vm.confluence_meta.label }}
-            </span>
-            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              {{ vm.confluence_meta.description }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Middle: Weighted Sentiment Score Meter (-100 to +100) -->
-        <div class="lg:col-span-4 flex flex-col justify-center space-y-3 border-b lg:border-b-0 lg:border-r border-slate-800 pb-5 lg:pb-0 lg:px-4">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">
-              Wedge-Weighted Sentiment Score
-            </span>
-            <span class="text-2xl font-mono font-extrabold
-              {% if analysis.weighted_sentiment_score > 10 %}text-emerald-400
-              {% elif analysis.weighted_sentiment_score < -10 %}text-red-400
-              {% else %}text-amber-400{% endif %}">
-              {{ "%+.1f"|format(analysis.weighted_sentiment_score) }} <span class="text-xs font-normal text-slate-500">/ 100</span>
-            </span>
-          </div>
-
-          <!-- Bi-Directional Sentiment Bar (-100 Bearish to +100 Bullish) -->
-          <div class="relative h-4 w-full rounded-full bg-slate-900 border border-slate-700/80 overflow-hidden">
-            <div class="absolute inset-0 flex">
-              <div class="w-1/2 bg-gradient-to-r from-red-500/35 via-red-500/15 to-transparent border-r border-slate-600"></div>
-              <div class="w-1/2 bg-gradient-to-r from-transparent via-emerald-500/15 to-emerald-500/35"></div>
-            </div>
-            <!-- Marker Pin -->
-            <div class="absolute top-0 bottom-0 w-2.5 -ml-1.5 rounded-full bg-amber-400 border-2 border-white shadow-md"
-                 style="left: {{ vm.sentiment_gauge_pct }}%;"></div>
-          </div>
-
-          <div class="flex justify-between text-[11px] font-mono text-slate-400">
-            <span class="text-red-400">-100 Max Bearish (Hawkish/Strong USD)</span>
-            <span class="text-slate-500">0 Neutral</span>
-            <span class="text-emerald-400">+100 Max Bullish (Dovish/Safe-Haven)</span>
-          </div>
-        </div>
-
-        <!-- Right: Confidence Score Gauge / Progress Bar (0% - 100%) -->
-        <div class="lg:col-span-4 flex flex-col justify-center space-y-3 lg:pl-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">
-              Conviction &amp; Alignment Confidence
-            </span>
-            <span class="text-2xl font-mono font-extrabold text-amber-400">
-              {{ analysis.confidence_score }}%
-            </span>
-          </div>
-
-          <div class="w-full h-4 bg-slate-900 rounded-full border border-slate-700/80 overflow-hidden p-0.5">
-            <div class="h-full rounded-full bg-gradient-to-r {{ vm.bias_meta.bar_class }} transition-all duration-500"
-                 style="width: {{ analysis.confidence_score }}%;"></div>
-          </div>
-
-          <div class="flex justify-between text-[11px] font-mono text-slate-400">
-            <span>0% Low</span>
-            <span>30–65% Cross-Current Conflict</span>
-            <span class="text-amber-300">80–100% Full Macro Alignment</span>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- 3. EXECUTIVE THESIS PANEL & MACROECONOMIC CONDITION PANEL           -->
+    <!-- 3. DESK TRADING THESIS & MACRO DRIVER BREAKDOWN                     -->
     <!-- =================================================================== -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-      <!-- Left (7 cols): "Why Buy or Sell XAUUSD / GC" Executive Thesis Panel -->
-      <div class="lg:col-span-7 terminal-card rounded-2xl p-6 flex flex-col justify-between">
+      <!-- Left (7 cols): Why Buy or Sell Gold Today -->
+      <div class="lg:col-span-7 paper-card rounded-xl p-6 flex flex-col justify-between">
         <div>
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3.5 mb-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>
-              Why Buy or Sell XAUUSD / GC — Executive Institutional Thesis
-            </h2>
-            <span class="text-xs font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded">
-              4-Wedge Synthesis
-            </span>
+          <div class="flex items-center justify-between border-b border-[#EAE3D5] pb-3.5 mb-4">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-[#9A6B16]">Desk Rationale</span>
+              <h2 class="editorial-heading text-xl font-bold text-[#1F1C18]">
+                Why Buy or Sell Gold Today — Key Takeaways
+              </h2>
+            </div>
           </div>
 
-          <ul class="space-y-3 text-sm text-slate-200 leading-relaxed">
+          <ol class="space-y-3 text-sm text-[#2C2621] leading-relaxed">
             {% for bullet in vm.thesis_bullets %}
-            <li class="flex items-start gap-3 bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5">
-              <span class="mt-1 w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 font-mono text-xs flex items-center justify-center shrink-0">
+            <li class="flex items-start gap-3 paper-inset rounded-lg p-3.5">
+              <span class="mt-0.5 w-5 h-5 rounded-full bg-[#1F1C18] text-[#FAF6EE] font-mono text-xs font-semibold flex items-center justify-center shrink-0">
                 {{ loop.index }}
               </span>
               <span>{{ bullet }}</span>
             </li>
             {% endfor %}
-          </ul>
+          </ol>
         </div>
 
         {% if vm.invalidation_bullet %}
-        <div class="mt-4 bg-red-950/35 border border-red-500/40 rounded-xl p-4 flex items-start gap-3.5">
-          <div class="px-2 py-1 rounded bg-red-500/20 border border-red-500/40 text-red-300 font-mono text-xs font-bold uppercase shrink-0 mt-0.5">
-            Invalidation Trigger
+        <div class="mt-4 bg-[#FAEDED] border border-[#E8C3C3] rounded-lg p-4 flex items-start gap-3">
+          <div class="px-2.5 py-1 rounded bg-[#A82828] text-white font-semibold text-xs uppercase shrink-0 mt-0.5">
+            Key Risk / Invalidation
           </div>
-          <p class="text-xs sm:text-sm text-red-200/90 leading-relaxed">
+          <p class="text-xs sm:text-sm text-[#6E1A1A] leading-relaxed">
             {{ vm.invalidation_bullet }}
           </p>
         </div>
         {% endif %}
       </div>
 
-      <!-- Right (5 cols): Current Macroeconomic Condition Panel -->
-      <div class="lg:col-span-5 terminal-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+      <!-- Right (5 cols): Macroeconomic Condition & 4 Core Pillars -->
+      <div class="lg:col-span-5 paper-card rounded-xl p-6 flex flex-col justify-between space-y-4">
         <div>
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3.5 mb-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span>
-              Current Macroeconomic Condition Panel
+          <div class="border-b border-[#EAE3D5] pb-3.5 mb-4">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-[#1B6B45]">Macro Overview</span>
+            <h2 class="editorial-heading text-xl font-bold text-[#1F1C18]">
+              Current Market Environment
             </h2>
-            <span class="text-xs font-mono text-slate-400">Real Yields • DXY • Safe-Haven</span>
           </div>
 
-          <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 leading-relaxed">
+          <div class="paper-inset rounded-lg p-4 text-sm text-[#2C2621] leading-relaxed">
             {{ analysis.macro_condition_summary }}
           </div>
         </div>
 
-        <!-- 4 Gold Impact Wedges Mini-Cards -->
+        <!-- 4 Gold Drivers -->
         <div class="space-y-2.5">
-          <div class="text-xs font-mono uppercase tracking-wider text-slate-400">
-            Quantitative Wedge Attribution (40% / 30% / 20% / 10%)
+          <div class="text-xs font-semibold uppercase tracking-wider text-[#655D52]">
+            Four Core Gold Drivers (Weighted Importance)
           </div>
           {% for w in analysis.wedge_breakdown %}
-          <div class="bg-slate-900/60 border border-slate-800/90 rounded-lg px-3.5 py-2.5">
-            <div class="flex items-center justify-between text-xs font-mono">
-              <span class="font-semibold text-slate-200 truncate pr-2">{{ w.wedge_name }}</span>
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">{{ w.weight_percentage }}% Wt</span>
-                <span class="font-bold px-2 py-0.5 rounded
-                  {% if w.net_sentiment_score > 5 %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/30
-                  {% elif w.net_sentiment_score < -5 %}bg-red-500/15 text-red-300 border border-red-500/30
-                  {% else %}bg-amber-500/15 text-amber-300 border border-amber-500/30{% endif %}">
+          <div class="bg-[#FAF6EE] border border-[#E2D9C8] rounded-lg px-3.5 py-2.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-[#1F1C18] truncate pr-2">{{ w.wedge_name }}</span>
+              <div class="flex items-center gap-2 shrink-0 font-mono">
+                <span class="px-1.5 py-0.5 rounded bg-[#EAE3D5] text-[#4A433B] text-[11px]">{{ w.weight_percentage }}% Wt</span>
+                <span class="font-semibold px-2 py-0.5 rounded text-[11px]
+                  {% if w.net_sentiment_score > 5 %}bg-[#E6F2EC] text-[#1B6B45] border border-[#B8D9C8]
+                  {% elif w.net_sentiment_score < -5 %}bg-[#FAEDED] text-[#A82828] border border-[#E8C3C3]
+                  {% else %}bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0]{% endif %}">
                   {{ "%+.1f"|format(w.net_sentiment_score) }}
                 </span>
               </div>
             </div>
-            <p class="text-xs text-slate-400 mt-1 leading-snug">{{ w.summary }}</p>
+            <p class="text-xs text-[#5C5346] mt-1 leading-snug">{{ w.summary }}</p>
           </div>
           {% endfor %}
         </div>
@@ -850,60 +927,50 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </section>
 
     <!-- =================================================================== -->
-    <!-- 4. CHART.JS VISUALIZATIONS (SIDE-BY-SIDE)                           -->
+    <!-- 4. VISUAL SUMMARY CHARTS                                            -->
     <!-- =================================================================== -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-      <!-- Chart 1: Horizontal Bar Chart of the 4 Gold Impact Wedges (-100 to +100) -->
-      <div class="lg:col-span-7 terminal-card rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-base font-bold text-white">
-              Gold Impact Wedges — Net Bullish vs. Bearish Score (-100 to +100)
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Directional contribution of each macro wedge to XAUUSD / COMEX GC=F
-            </p>
-          </div>
-          <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
-            Horizontal Bar
-          </span>
+      <!-- Chart 1: Factor Scores -->
+      <div class="lg:col-span-7 paper-card rounded-xl p-6">
+        <div class="mb-4">
+          <h2 class="editorial-heading text-lg font-bold text-[#1F1C18]">
+            Gold Driver Scores (Bearish -100 to Bullish +100)
+          </h2>
+          <p class="text-xs text-[#655D52] mt-0.5">
+            How each macro factor is currently pushing XAUUSD / GC=F
+          </p>
         </div>
-        <div class="relative h-[290px] w-full">
+        <div class="relative h-[280px] w-full">
           <canvas id="wedgeBarChart"></canvas>
         </div>
       </div>
 
-      <!-- Chart 2: Doughnut Chart of Weighted Bullish vs. Bearish vs. Neutral News -->
-      <div class="lg:col-span-5 terminal-card rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-base font-bold text-white">
-              Impact-Weighted News Polarity Distribution
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Share of total catalyst impact weight across {{ vm.sorted_news_items | length }} breaking Gold headlines
-            </p>
-          </div>
-          <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
-            Weighted Doughnut
-          </span>
+      <!-- Chart 2: News Balance -->
+      <div class="lg:col-span-5 paper-card rounded-xl p-6">
+        <div class="mb-4">
+          <h2 class="editorial-heading text-lg font-bold text-[#1F1C18]">
+            Today&rsquo;s News Sentiment Balance
+          </h2>
+          <p class="text-xs text-[#655D52] mt-0.5">
+            Breakdown of {{ vm.sorted_news_items | length }} tracked stories weighted by market importance
+          </p>
         </div>
-        <div class="relative h-[240px] w-full flex items-center justify-center">
+        <div class="relative h-[230px] w-full flex items-center justify-center">
           <canvas id="newsDoughnutChart"></canvas>
         </div>
-        <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800 text-center font-mono text-xs">
-          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg py-1.5">
-            <div class="text-emerald-300 font-bold">{{ vm.doughnut_pcts['BULLISH GOLD'] }}%</div>
-            <div class="text-[10px] text-slate-400">Bullish ({{ vm.count_dist['BULLISH GOLD'] }} items)</div>
+        <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#EAE3D5] text-center text-xs">
+          <div class="bg-[#E6F2EC] border border-[#B8D9C8] rounded-lg py-1.5">
+            <div class="text-[#1B6B45] font-mono font-bold">{{ vm.doughnut_pcts['BULLISH GOLD'] }}%</div>
+            <div class="text-[11px] text-[#4A433B]">Bullish ({{ vm.count_dist['BULLISH GOLD'] }})</div>
           </div>
-          <div class="bg-red-500/10 border border-red-500/30 rounded-lg py-1.5">
-            <div class="text-red-300 font-bold">{{ vm.doughnut_pcts['BEARISH GOLD'] }}%</div>
-            <div class="text-[10px] text-slate-400">Bearish ({{ vm.count_dist['BEARISH GOLD'] }} items)</div>
+          <div class="bg-[#FAEDED] border border-[#E8C3C3] rounded-lg py-1.5">
+            <div class="text-[#A82828] font-mono font-bold">{{ vm.doughnut_pcts['BEARISH GOLD'] }}%</div>
+            <div class="text-[11px] text-[#4A433B]">Bearish ({{ vm.count_dist['BEARISH GOLD'] }})</div>
           </div>
-          <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg py-1.5">
-            <div class="text-amber-300 font-bold">{{ vm.doughnut_pcts['NEUTRAL'] }}%</div>
-            <div class="text-[10px] text-slate-400">Neutral ({{ vm.count_dist['NEUTRAL'] }} items)</div>
+          <div class="bg-[#FBF3E0] border border-[#E6CFA0] rounded-lg py-1.5">
+            <div class="text-[#8A5A0E] font-mono font-bold">{{ vm.doughnut_pcts['NEUTRAL'] }}%</div>
+            <div class="text-[11px] text-[#4A433B]">Neutral ({{ vm.count_dist['NEUTRAL'] }})</div>
           </div>
         </div>
       </div>
@@ -911,103 +978,104 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </section>
 
     <!-- =================================================================== -->
-    <!-- 5. INTRADAY BREAKING NEWS TABLE (SORTED BY IMPACT WEIGHT 10 -> 1)   -->
+    <!-- 5. CURATED GOLD & MACRO NEWS BRIEFING (SORTED BY IMPORTANCE)        -->
     <!-- =================================================================== -->
-    <section class="terminal-card rounded-2xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <section class="paper-card rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-[#DED6C6] bg-[#FAF6EE] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-            Intraday Gold &amp; Macro Breaking News Matrix (Sorted by Impact Weight 10 &rarr; 1)
+          <h2 class="editorial-heading text-xl font-bold text-[#1F1C18]">
+            Intraday Gold &amp; Macro News Briefing
           </h2>
-          <p class="text-xs text-slate-400 mt-0.5">
-            Deduplicated headlines scored for XAUUSD / GC=F transmission mechanism and wedge attribution
+          <p class="text-xs text-[#655D52] mt-0.5">
+            Ranked from highest market priority (10/10) to lowest, with desk notes on how each story affects Gold
           </p>
         </div>
-        <div class="text-xs font-mono text-slate-400">
-          Showing <strong class="text-amber-400">{{ vm.sorted_news_items | length }}</strong> Verified Catalysts
+        <div class="text-xs font-medium text-[#655D52]">
+          Showing <strong class="text-[#1F1C18]">{{ vm.sorted_news_items | length }}</strong> Stories
         </div>
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono uppercase tracking-wider text-slate-400">
-              <th class="py-3.5 px-4 text-center w-28">Impact Wt</th>
-              <th class="py-3.5 px-4 w-56">Gold Wedge Category</th>
-              <th class="py-3.5 px-4">Breaking Headline &amp; Timestamp</th>
-              <th class="py-3.5 px-4 text-center w-40">Individual Bias</th>
-              <th class="py-3.5 px-5 w-[34%]">Gold Transmission Mechanism</th>
+            <tr class="bg-[#F0EAE0] border-b border-[#DED6C6] text-[11px] font-semibold uppercase tracking-wider text-[#5C5346]">
+              <th class="py-3 px-3 text-center w-20">Priority</th>
+              <th class="py-3 px-4 w-44">Date &amp; Time (BST)</th>
+              <th class="py-3 px-4 w-48">Driver Category</th>
+              <th class="py-3 px-4">Headline &amp; Source</th>
+              <th class="py-3 px-4 text-center w-36">Gold Impact</th>
+              <th class="py-3 px-5 w-[30%]">Desk Note (Why It Matters)</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/80 text-sm">
+          <tbody class="divide-y divide-[#EAE3D5] text-sm">
             {% for item in vm.sorted_news_items %}
             {% set wt = item.impact_weight | int %}
             {% set bias = item.gold_bias %}
-            <tr class="hover:bg-slate-800/40 transition-colors">
-              <!-- Column 1: Impact Weight Badge (1-10) -->
-              <td class="py-4 px-4 text-center align-top">
-                <div class="inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-lg font-mono font-bold border
+            <tr class="hover:bg-[#FAF6EE] transition-colors">
+              <td class="py-3.5 px-3 text-center align-top">
+                <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-md font-mono font-semibold border
                   {% if wt >= 8 %}
-                    bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/10
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
                   {% elif wt >= 5 %}
-                    bg-sky-500/15 text-sky-300 border-sky-500/40
+                    bg-[#F0EAE0] text-[#1F1C18] border-[#D5CBB8]
                   {% else %}
-                    bg-slate-800 text-slate-300 border-slate-700
+                    bg-[#FAF6EE] text-[#655D52] border-[#E2D9C8]
                   {% endif %}">
-                  <span class="text-base leading-none">{{ wt }}<span class="text-[10px] font-normal opacity-75">/10</span></span>
-                  <span class="text-[9px] uppercase tracking-wider mt-0.5 opacity-80">
-                    {{ 'High' if wt >= 8 else ('Med' if wt >= 5 else 'Low') }}
-                  </span>
+                  <span class="text-sm leading-none">{{ wt }}<span class="text-[10px] font-normal">/10</span></span>
                 </div>
               </td>
 
-              <!-- Column 2: Gold Wedge Category -->
-              <td class="py-4 px-4 align-top">
-                <div class="text-xs font-mono font-semibold text-amber-300/95 leading-snug">
+              <td class="py-3.5 px-4 align-top font-mono text-xs">
+                <div class="font-semibold text-[#1F1C18]">{{ item.bst_date }}</div>
+                <div class="text-[#9A6B16] font-medium mt-0.5">{{ item.bst_time }}</div>
+                {% if item.age_human %}
+                <span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-[#F0EAE0] text-[#5C5346] font-sans text-[10px]">
+                  {{ item.age_human }}
+                </span>
+                {% endif %}
+              </td>
+
+              <td class="py-3.5 px-4 align-top">
+                <div class="text-xs font-semibold text-[#5C5346] leading-snug">
                   {{ item.gold_wedge_category }}
                 </div>
               </td>
 
-              <!-- Column 3: Headline & Timestamp -->
-              <td class="py-4 px-4 align-top">
+              <td class="py-3.5 px-4 align-top">
                 {% if item.url %}
                 <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer"
-                   class="font-semibold text-white hover:text-amber-300 transition-colors leading-snug block">
+                   class="font-semibold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] hover:decoration-[#9A6B16] transition-colors leading-snug block">
                   {{ item.headline }}
                 </a>
                 {% else %}
-                <div class="font-semibold text-white leading-snug">
+                <div class="font-semibold text-[#1F1C18] leading-snug">
                   {{ item.headline }}
                 </div>
                 {% endif %}
-                <div class="text-xs font-mono text-slate-400 mt-1.5">
-                  {{ item.source_time }}
+                <div class="flex flex-wrap items-center gap-2 text-xs text-[#655D52] mt-1.5">
+                  <span class="px-2 py-0.5 rounded bg-[#F0EAE0] border border-[#DED6C6] text-[#1F1C18] font-medium text-[11px]">
+                    {{ item.source_name }}
+                  </span>
+                  <span class="font-mono text-[11px] text-[#786E60]">
+                    {{ item.bst_datetime }}
+                  </span>
                 </div>
               </td>
 
-              <!-- Column 4: Individual Bias Badge -->
-              <td class="py-4 px-4 text-center align-top">
-                <span class="inline-block px-2.5 py-1 rounded-md text-xs font-mono font-bold border
+              <td class="py-3.5 px-4 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border
                   {% if bias == 'BULLISH GOLD' %}
-                    bg-emerald-500/15 text-emerald-300 border-emerald-500/40
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
                   {% elif bias == 'BEARISH GOLD' %}
-                    bg-red-500/15 text-red-300 border-red-500/40
+                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
                   {% else %}
-                    bg-amber-500/15 text-amber-300 border-amber-500/40
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
                   {% endif %}">
                   {{ bias }}
                 </span>
-                <div class="mt-1 font-mono text-xs font-semibold
-                  {% if item.sentiment_score > 0 %}text-emerald-400
-                  {% elif item.sentiment_score < 0 %}text-red-400
-                  {% else %}text-amber-400{% endif %}">
-                  Score: {{ "%+d"|format(item.sentiment_score) }}
-                </div>
               </td>
 
-              <!-- Column 5: 1-Sentence Gold Transmission Mechanism -->
-              <td class="py-4 px-5 align-top text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <td class="py-3.5 px-5 align-top text-xs sm:text-sm text-[#36312A] leading-relaxed">
                 {{ item.gold_transmission_mechanism }}
               </td>
             </tr>
@@ -1018,195 +1086,173 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </section>
 
     <!-- =================================================================== -->
-    <!-- 6. GOLD-ONLY ECONOMIC CALENDAR & SMART EVENT ANALYSIS               -->
-    <!--    (FOREX FACTORY JSON/XML • MQL5 / JBLANKED • ML 1M/30M/1H • GPT)  -->
+    <!-- 6. GOLD-ONLY ECONOMIC CALENDAR & RELEASE PLAYBOOK (USD -> XAUUSD)   -->
     <!-- =================================================================== -->
     {% if vm.gold_calendar and vm.gold_calendar.events %}
-    <section aria-label="Gold-Only Economic Calendar and Smart Event Analysis" class="terminal-card rounded-2xl overflow-hidden border-t-2 border-t-amber-500/80">
-      <!-- Section Header -->
-      <div class="px-6 py-5 border-b border-slate-800 bg-slate-900/60">
+    <section aria-label="Gold Economic Calendar" class="paper-card rounded-xl overflow-hidden border-t-4 border-t-[#9A6B16]">
+      <div class="px-6 py-5 border-b border-[#DED6C6] bg-[#FAF6EE]">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div class="flex items-center gap-2.5 flex-wrap mb-1">
-              <span class="px-2.5 py-0.5 text-[11px] font-mono font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded">
-                GOLD-ONLY FUNDAMENTAL CALENDAR (USD &rarr; XAUUSD / GC=F)
-              </span>
-              <span class="px-2 py-0.5 text-[11px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded">
-                Forex Factory Weekly JSON/XML + MQL5/JBlanked Event IDs
-              </span>
-              <span class="px-2 py-0.5 text-[11px] font-mono text-sky-300 bg-sky-500/10 border border-sky-500/30 rounded">
-                Smart Analysis • ML (1m/30m/1h) • NewsGPT Gold Engine
-              </span>
+            <div class="text-xs font-semibold uppercase tracking-wider text-[#9A6B16] mb-0.5">
+              US Economic Releases Driving Gold (USD &rarr; XAUUSD / GC=F)
             </div>
-            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-              XAUUSD Economic Calendar, Smart Outcome Playbook &amp; ML Price Action Projections
+            <h2 class="editorial-heading text-xl sm:text-2xl font-bold text-[#1F1C18]">
+              Gold Economic Calendar &amp; Event Reaction Playbook
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Strictly filtered for USD &amp; Federal Reserve events that directly drive Gold (`XAUUSD` / `GC=F`) via real yields (`^TNX`) and `DXY` (all non-Gold FX pairs &amp; energy noise excluded)
+            <p class="text-xs text-[#655D52] mt-0.5">
+              Filtered strictly for US &amp; Federal Reserve releases that move Gold via Treasury yields and the Dollar
             </p>
           </div>
 
-          <div class="flex items-center gap-3 text-xs font-mono shrink-0">
-            <div class="bg-slate-950/90 border border-slate-800 rounded-lg px-3.5 py-2 text-center">
-              <div class="text-[10px] uppercase text-slate-400">Tier-1 High Impact</div>
-              <div class="text-amber-400 font-extrabold text-sm mt-0.5">{{ vm.gold_calendar.high_impact_count }} Events</div>
+          <div class="flex items-center gap-3 text-xs shrink-0">
+            <div class="paper-card rounded-lg px-3.5 py-2 text-center">
+              <div class="text-[10px] uppercase font-semibold text-[#786E60]">High-Impact Releases</div>
+              <div class="text-[#A82828] font-mono font-bold text-sm mt-0.5">{{ vm.gold_calendar.high_impact_count }} Major</div>
             </div>
-            <div class="bg-slate-950/90 border border-slate-800 rounded-lg px-3.5 py-2 text-center">
-              <div class="text-[10px] uppercase text-slate-400">Total Gold Events</div>
-              <div class="text-slate-200 font-extrabold text-sm mt-0.5">{{ vm.gold_calendar.total_gold_events }} Filtered</div>
+            <div class="paper-card rounded-lg px-3.5 py-2 text-center">
+              <div class="text-[10px] uppercase font-semibold text-[#786E60]">Tracked Releases</div>
+              <div class="text-[#1F1C18] font-mono font-bold text-sm mt-0.5">{{ vm.gold_calendar.total_gold_events }} Events</div>
             </div>
           </div>
         </div>
 
-        <!-- 2 Summary KPI Callout Strips: Next Tier-1 Gold Catalyst & Weekly Calendar Gold Tilt -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mt-4 pt-4 border-t border-slate-800/80 text-xs font-mono">
-          <div class="bg-slate-950/75 border border-amber-500/30 rounded-xl px-4 py-3 flex items-start gap-3">
-            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase text-[10px] shrink-0 mt-0.5">
-              Next Tier-1 Gold Catalyst
+        <!-- 2 Summary Callout Strips -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mt-4 pt-4 border-t border-[#EAE3D5] text-xs">
+          <div class="paper-card rounded-lg px-4 py-3 flex items-start gap-3">
+            <span class="px-2 py-0.5 rounded bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0] font-semibold uppercase text-[10px] shrink-0 mt-0.5">
+              Next Major Catalyst
             </span>
-            <span class="text-slate-200 font-semibold leading-snug">
+            <span class="text-[#1F1C18] font-medium leading-snug">
               {{ vm.gold_calendar.next_major_gold_catalyst }}
             </span>
           </div>
-          <div class="bg-slate-950/75 border border-slate-800 rounded-xl px-4 py-3 flex items-start gap-3">
-            <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold uppercase text-[10px] shrink-0 mt-0.5">
-              Calendar Macro Gold Tilt
+          <div class="paper-card rounded-lg px-4 py-3 flex items-start gap-3">
+            <span class="px-2 py-0.5 rounded bg-[#F0EAE0] text-[#4A433B] border border-[#D5CBB8] font-semibold uppercase text-[10px] shrink-0 mt-0.5">
+              Calendar Macro Tilt
             </span>
-            <span class="text-slate-200 font-semibold leading-snug">
+            <span class="text-[#1F1C18] font-medium leading-snug">
               {{ vm.gold_calendar.calendar_macro_tilt }}
             </span>
           </div>
         </div>
       </div>
 
-      <!-- Economic Calendar Table -->
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-900/95 border-b border-slate-800 text-[11px] font-mono uppercase tracking-wider text-slate-400">
-              <th class="py-3.5 px-4 w-44">Date / Time (UTC)</th>
-              <th class="py-3.5 px-4 w-64">Gold Event, ID &amp; Wedge</th>
-              <th class="py-3.5 px-3 text-center w-36">Strength &amp; Quality</th>
-              <th class="py-3.5 px-4 text-center w-52">Actual / Forecast / Prev</th>
-              <th class="py-3.5 px-4 w-[28%]">Smart Analysis &amp; ML (1m / 30m / 1h) Gold Reaction</th>
-              <th class="py-3.5 px-4 w-[24%]">NewsGPT Gold Bias &amp; Projection</th>
+            <tr class="bg-[#F0EAE0] border-b border-[#DED6C6] text-[11px] font-semibold uppercase tracking-wider text-[#5C5346]">
+              <th class="py-3 px-4 w-44">Date &amp; Time (BST)</th>
+              <th class="py-3 px-4 w-60">Economic Release</th>
+              <th class="py-3 px-3 text-center w-32">Impact</th>
+              <th class="py-3 px-4 text-center w-52">Actual / Forecast / Prev</th>
+              <th class="py-3 px-4 w-[29%]">What Happens to Gold &amp; Typical Move (1m / 30m / 1h)</th>
+              <th class="py-3 px-4 w-[24%]">Desk Bias &amp; Note</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/80 text-xs sm:text-sm">
+          <tbody class="divide-y divide-[#EAE3D5] text-xs sm:text-sm">
             {% for ev in vm.gold_calendar.events %}
-            <tr class="hover:bg-slate-800/40 transition-colors {{ 'bg-amber-500/[0.03]' if ev.impact_level == 'High' else '' }}">
-              <!-- Column 1: Date/Time & Release Status -->
-              <td class="py-4 px-4 align-top font-mono">
-                <div class="text-slate-200 font-semibold text-xs">{{ ev.date_utc }}</div>
-                <span class="inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-bold border
+            <tr class="hover:bg-[#FAF6EE] transition-colors {{ 'bg-[#FFFDF4]' if ev.impact_level == 'High' else '' }}">
+              <td class="py-3.5 px-4 align-top font-mono">
+                <div class="text-[#1F1C18] font-semibold text-xs">{{ ev.date_utc }}</div>
+                <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-sans font-semibold border
                   {% if 'IMMINENT' in ev.release_status %}
-                    bg-amber-500/20 text-amber-300 border-amber-500/50 animate-pulse
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
                   {% elif 'RELEASED TODAY' in ev.release_status %}
-                    bg-emerald-500/15 text-emerald-300 border-emerald-500/40
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
                   {% elif 'UPCOMING' in ev.release_status %}
-                    bg-sky-500/15 text-sky-300 border-sky-500/40
+                    bg-[#EDF3F8] text-[#2B547E] border-[#C2D6E8]
                   {% else %}
-                    bg-slate-800 text-slate-400 border-slate-700
+                    bg-[#F0EAE0] text-[#655D52] border-[#DED6C6]
                   {% endif %}">
                   {{ ev.release_status }}
                 </span>
               </td>
 
-              <!-- Column 2: Event Name, MQL5/JBlanked ID & Gold Wedge Category -->
-              <td class="py-4 px-4 align-top">
-                <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                  <span class="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold">
+              <td class="py-3.5 px-4 align-top">
+                <div class="flex items-center gap-1.5 mb-1">
+                  <span class="px-1.5 py-0.5 rounded bg-[#F0EAE0] border border-[#D5CBB8] text-[#4A433B] font-mono text-[10px] font-semibold">
                     {{ ev.currency }}
-                  </span>
-                  <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono text-[10px]">
-                    ID: {{ ev.event_id }}
                   </span>
                 </div>
                 <a href="{{ ev.url }}" target="_blank" rel="noopener noreferrer"
-                   class="font-bold text-white hover:text-amber-300 transition-colors leading-snug block">
+                   class="font-bold text-[#1F1C18] hover:text-[#9A6B16] underline decoration-[#DED6C6] transition-colors leading-snug block">
                   {{ ev.event_name }}
                 </a>
-                <div class="text-[11px] font-mono text-amber-300/90 mt-1">
+                <div class="text-[11px] text-[#786E60] mt-0.5">
                   {{ ev.gold_category }}
                 </div>
               </td>
 
-              <!-- Column 3: Strength & Quality -->
-              <td class="py-4 px-3 text-center align-top font-mono">
-                <span class="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold border
+              <td class="py-3.5 px-3 text-center align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-[11px] font-semibold border
                   {% if ev.impact_level == 'High' %}
-                    bg-red-500/20 text-red-300 border-red-500/50 shadow-sm shadow-red-500/10
+                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
                   {% elif ev.impact_level == 'Medium' %}
-                    bg-amber-500/15 text-amber-300 border-amber-500/40
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
                   {% else %}
-                    bg-slate-800 text-slate-300 border-slate-700
+                    bg-[#F0EAE0] text-[#655D52] border-[#DED6C6]
                   {% endif %}">
                   {{ ev.strength }}
                 </span>
-                <div class="text-[10px] text-slate-400 mt-1.5">
+                <div class="text-[11px] text-[#786E60] mt-1">
                   {{ ev.quality }}
                 </div>
               </td>
 
-              <!-- Column 4: Actual / Forecast / Previous & Outcome -->
-              <td class="py-4 px-4 align-top font-mono">
-                <div class="grid grid-cols-3 gap-1.5 text-center bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-xs">
+              <td class="py-3.5 px-4 align-top font-mono">
+                <div class="grid grid-cols-3 gap-1.5 text-center paper-inset rounded-lg p-2 text-xs">
                   <div>
-                    <div class="text-[9px] uppercase text-slate-500">Actual</div>
-                    <div class="font-bold text-amber-300 mt-0.5">{{ ev.actual }}</div>
+                    <div class="text-[9px] font-sans uppercase text-[#786E60]">Actual</div>
+                    <div class="font-bold text-[#1F1C18] mt-0.5">{{ ev.actual }}</div>
                   </div>
-                  <div class="border-x border-slate-800 px-1">
-                    <div class="text-[9px] uppercase text-slate-500">Forecast</div>
-                    <div class="font-semibold text-slate-200 mt-0.5">{{ ev.forecast }}</div>
+                  <div class="border-x border-[#DED6C6] px-1">
+                    <div class="text-[9px] font-sans uppercase text-[#786E60]">Forecast</div>
+                    <div class="font-semibold text-[#4A433B] mt-0.5">{{ ev.forecast }}</div>
                   </div>
                   <div>
-                    <div class="text-[9px] uppercase text-slate-500">Prev</div>
-                    <div class="text-slate-400 mt-0.5">{{ ev.previous }}</div>
+                    <div class="text-[9px] font-sans uppercase text-[#786E60]">Prev</div>
+                    <div class="text-[#786E60] mt-0.5">{{ ev.previous }}</div>
                   </div>
                 </div>
-                <div class="text-[10px] text-center text-slate-400 mt-1.5 truncate" title="{{ ev.outcome_vs_projection }}">
+                <div class="text-[11px] font-sans text-center text-[#655D52] mt-1 truncate" title="{{ ev.outcome_vs_projection }}">
                   {{ ev.outcome_vs_projection }}
                 </div>
               </td>
 
-              <!-- Column 5: Smart Analysis Rules & ML (1m / 30m / 1h) XAUUSD Price Action -->
-              <td class="py-4 px-4 align-top text-xs space-y-1.5">
-                <div class="bg-slate-900/70 border border-slate-800/90 rounded-lg p-2 space-y-1">
-                  <div class="text-[10px] font-mono uppercase text-slate-400 font-semibold">Smart Analysis Gold Playbook:</div>
-                  <div class="text-slate-300 leading-snug">
-                    <strong class="text-red-300">If Hot/Higher:</strong> {{ ev.smart_rule_hot }}
+              <td class="py-3.5 px-4 align-top text-xs space-y-1.5">
+                <div class="paper-inset rounded-lg p-2.5 space-y-1">
+                  <div class="text-[#2C2621] leading-snug">
+                    <strong class="text-[#A82828]">If Higher / Stronger:</strong> {{ ev.smart_rule_hot }}
                   </div>
-                  <div class="text-slate-300 leading-snug">
-                    <strong class="text-emerald-300">If Cool/Lower:</strong> {{ ev.smart_rule_cool }}
+                  <div class="text-[#2C2621] leading-snug">
+                    <strong class="text-[#1B6B45]">If Lower / Softer:</strong> {{ ev.smart_rule_cool }}
                   </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-slate-400 pt-0.5">
-                  <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-mono text-[#5C5346] pt-0.5">
+                  <span class="px-2 py-0.5 rounded bg-[#FAF6EE] border border-[#DED6C6]">
                     <strong>1m:</strong> {{ ev.ml_1m }}
                   </span>
-                  <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                  <span class="px-2 py-0.5 rounded bg-[#FAF6EE] border border-[#DED6C6]">
                     <strong>30m:</strong> {{ ev.ml_30m }}
                   </span>
-                  <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                  <span class="px-2 py-0.5 rounded bg-[#FAF6EE] border border-[#DED6C6]">
                     <strong>1h:</strong> {{ ev.ml_1h }}
                   </span>
                 </div>
               </td>
 
-              <!-- Column 6: NewsGPT Gold Bias & Commentary -->
-              <td class="py-4 px-4 align-top">
-                <span class="inline-block px-2.5 py-1 rounded-md text-xs font-mono font-bold border mb-1.5
+              <td class="py-3.5 px-4 align-top">
+                <span class="inline-block px-2.5 py-1 rounded text-xs font-semibold border mb-1.5
                   {% if ev.smart_gold_bias == 'BULLISH GOLD' %}
-                    bg-emerald-500/15 text-emerald-300 border-emerald-500/40
+                    bg-[#E6F2EC] text-[#1B6B45] border-[#B8D9C8]
                   {% elif ev.smart_gold_bias == 'BEARISH GOLD' %}
-                    bg-red-500/15 text-red-300 border-red-500/40
+                    bg-[#FAEDED] text-[#A82828] border-[#E8C3C3]
                   {% else %}
-                    bg-amber-500/15 text-amber-300 border-amber-500/40
+                    bg-[#FBF3E0] text-[#8A5A0E] border-[#E6CFA0]
                   {% endif %}">
                   {{ ev.smart_gold_bias }}
                 </span>
-                <p class="text-xs text-slate-300 leading-relaxed">
+                <p class="text-xs text-[#36312A] leading-relaxed">
                   {{ ev.newsgpt_gold_commentary }}
                 </p>
               </td>
@@ -1218,14 +1264,14 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
     </section>
     {% endif %}
 
-    <footer class="text-center text-xs font-mono text-slate-500 py-4 border-t border-slate-800/80">
-      Gold (XAUUSD / COMEX GC=F) Intraday News &amp; Macro Sentiment Trading Agent • Quantitative Decision Support Terminal
+    <footer class="text-center text-xs text-[#786E60] py-5 border-t border-[#DED6C6]">
+      XAUUSD / COMEX Gold (GC=F) Desk Research &amp; Fundamental Briefing
     </footer>
 
   </div>
 
   <!-- ===================================================================== -->
-  <!-- CHART.JS INITIALIZATION SCRIPT                                        -->
+  <!-- PORTAL & CHART CONTROLLER                                             -->
   <!-- ===================================================================== -->
   <script>
     (function() {
@@ -1233,16 +1279,17 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
       const doughnutData = {{ vm.chart_doughnut_json | safe }};
       const initialPortalAuth = {{ vm.portal_auth_json | safe }};
 
-      // ===================================================================
-      // MULTI-USER & SINGLE-ADMIN PORTAL CONTROLLER (CODE-PERSISTED)
-      // ===================================================================
-      const STORAGE_USERS_KEY = 'xauusd_portal_code_users_v1';
-      const STORAGE_SESSION_KEY = 'xauusd_portal_active_session_v1';
+      const STORAGE_USERS_KEY = 'xauusd_portal_code_users_v2';
+      const STORAGE_SESSION_KEY = 'xauusd_portal_active_session_v2';
+      try {
+        localStorage.removeItem('xauusd_portal_code_users_v1');
+        localStorage.removeItem('xauusd_portal_active_session_v1');
+        sessionStorage.removeItem('xauusd_portal_active_session_v1');
+      } catch (e) {}
 
       let portalAdmin = initialPortalAuth.admin;
       let portalUsers = Array.isArray(initialPortalAuth.users) ? initialPortalAuth.users.slice() : [];
 
-      // Merge any locally cached users if running in standalone file:// mode
       try {
         const cachedRaw = localStorage.getItem(STORAGE_USERS_KEY);
         if (cachedRaw && window.location.protocol === 'file:') {
@@ -1294,10 +1341,10 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         const banner = document.getElementById('adminStatusBanner');
         if (!banner) return;
         banner.textContent = msg;
-        banner.className = 'rounded-lg p-3 text-xs font-mono border ' + (
+        banner.className = 'rounded-md p-3 text-xs font-medium border ' + (
           isError
-            ? 'bg-red-500/15 border-red-500/40 text-red-300'
-            : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+            ? 'bg-[#FAEDED] border-[#E8C3C3] text-[#A82828]'
+            : 'bg-[#E6F2EC] border-[#B8D9C8] text-[#1B6B45]'
         );
         banner.classList.remove('hidden');
       }
@@ -1311,35 +1358,38 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         if (!tbody) return;
 
         let html = '';
-        // Row 0: Locked Single Administrator Account
-        html += '<tr class="bg-amber-500/10">' +
-          '<td class="py-2.5 px-3 font-bold text-amber-300">' + portalAdmin.username + '</td>' +
-          '<td class="py-2.5 px-3 text-slate-300">' + portalAdmin.password + '</td>' +
-          '<td class="py-2.5 px-3 text-slate-200">' + (portalAdmin.display_name || 'Administrator') + '</td>' +
-          '<td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">SINGLE ADMIN</span></td>' +
-          '<td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">ACTIVE</span></td>' +
-          '<td class="py-2.5 px-3 text-right text-slate-500 text-[10px]">Locked Owner</td>' +
+        html += '<tr class="bg-[#FBF3E0]/60">' +
+          '<td class="py-2.5 px-3.5 font-bold text-[#1F1C18]">' + portalAdmin.username + '</td>' +
+          '<td class="py-2.5 px-3.5 font-mono text-[#5C5346]">' + portalAdmin.password + '</td>' +
+          '<td class="py-2.5 px-3.5 text-[#1F1C18]">' + (portalAdmin.display_name || 'Administrator') + '</td>' +
+          '<td class="py-2.5 px-3.5"><span class="px-2 py-0.5 rounded bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0] text-[10px] font-semibold">ADMIN</span></td>' +
+          '<td class="py-2.5 px-3.5 text-center"><span class="px-2 py-0.5 rounded bg-[#E6F2EC] text-[#1B6B45] text-[10px] font-semibold">ACTIVE</span></td>' +
+          '<td class="py-2.5 px-3.5 text-right text-[#786E60] text-[11px]">Owner</td>' +
         '</tr>';
+
+        if (portalUsers.length === 0) {
+          html += '<tr><td colspan="6" class="py-4 px-3.5 text-center text-[#786E60] italic">No members registered yet. Use the form above to register a member manually.</td></tr>';
+        }
 
         portalUsers.forEach(function(u) {
           const isActive = u.active !== false;
           const safeUser = String(u.username || '').replace(/'/g, "\\'");
-          html += '<tr class="hover:bg-slate-900/60">' +
-            '<td class="py-2.5 px-3 font-bold text-white">' + u.username + '</td>' +
-            '<td class="py-2.5 px-3 text-amber-300">' + u.password + '</td>' +
-            '<td class="py-2.5 px-3 text-slate-300">' + (u.display_name || u.username) + '</td>' +
-            '<td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px]">USER</span></td>' +
-            '<td class="py-2.5 px-3 text-center">' +
+          html += '<tr class="hover:bg-[#FAF6EE]">' +
+            '<td class="py-2.5 px-3.5 font-semibold text-[#1F1C18]">' + u.username + '</td>' +
+            '<td class="py-2.5 px-3.5 font-mono text-[#9A6B16]">' + u.password + '</td>' +
+            '<td class="py-2.5 px-3.5 text-[#4A433B]">' + (u.display_name || u.username) + '</td>' +
+            '<td class="py-2.5 px-3.5"><span class="px-2 py-0.5 rounded bg-[#F0EAE0] text-[#4A433B] border border-[#DED6C6] text-[10px]">MEMBER</span></td>' +
+            '<td class="py-2.5 px-3.5 text-center">' +
               (isActive
-                ? '<span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">ACTIVE</span>'
-                : '<span class="px-2 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 text-[10px] font-bold">DISABLED</span>') +
+                ? '<span class="px-2 py-0.5 rounded bg-[#E6F2EC] text-[#1B6B45] border border-[#B8D9C8] text-[10px] font-semibold">ACTIVE</span>'
+                : '<span class="px-2 py-0.5 rounded bg-[#FAEDED] text-[#A82828] border border-[#E8C3C3] text-[10px] font-semibold">PAUSED</span>') +
             '</td>' +
-            '<td class="py-2.5 px-3 text-right space-x-1.5">' +
-              '<button type="button" onclick="window.adminToggleUser(\'' + safeUser + '\')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px]">' +
-                (isActive ? 'Disable' : 'Enable') +
+            '<td class="py-2.5 px-3.5 text-right space-x-1.5">' +
+              '<button type="button" onclick="window.adminToggleUser(\'' + safeUser + '\')" class="px-2.5 py-1 rounded bg-[#F0EAE0] hover:bg-[#E2D9C8] text-[#1F1C18] border border-[#D5CBB8] text-[11px]">' +
+                (isActive ? 'Pause' : 'Activate') +
               '</button>' +
-              '<button type="button" onclick="window.adminDeleteUser(\'' + safeUser + '\')" class="px-2 py-1 rounded bg-red-500/15 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[10px]">' +
-                'Delete' +
+              '<button type="button" onclick="window.adminDeleteUser(\'' + safeUser + '\')" class="px-2.5 py-1 rounded bg-[#FAEDED] hover:bg-[#F5D6D6] text-[#A82828] border border-[#E8C3C3] text-[11px]">' +
+                'Remove' +
               '</button>' +
             '</td>' +
           '</tr>';
@@ -1366,25 +1416,18 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         if (overlay) overlay.classList.add('hidden');
         if (session.role === 'admin') {
           if (userBadge) {
-            userBadge.innerHTML = '&#128081; <strong>ADMIN:</strong> ' + session.username + ' (' + (session.display_name || 'Administrator') + ')';
-            userBadge.className = 'px-2.5 py-1 rounded-md text-xs font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40';
+            userBadge.innerHTML = 'Signed in as <strong>' + session.username + '</strong> (Admin)';
+            userBadge.className = 'px-2.5 py-1 rounded text-xs font-medium bg-[#FBF3E0] text-[#8A5A0E] border border-[#E6CFA0]';
           }
           if (adminBtn) adminBtn.classList.remove('hidden');
         } else {
           if (userBadge) {
-            userBadge.innerHTML = '&#128100; <strong>USER:</strong> ' + session.username + ' (' + (session.display_name || session.username) + ')';
-            userBadge.className = 'px-2.5 py-1 rounded-md text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+            userBadge.innerHTML = 'Signed in as <strong>' + (session.display_name || session.username) + '</strong>';
+            userBadge.className = 'px-2.5 py-1 rounded text-xs font-medium bg-[#E6F2EC] text-[#1B6B45] border border-[#B8D9C8]';
           }
           if (adminBtn) adminBtn.classList.add('hidden');
         }
       }
-
-      window.fillLogin = function(u, p) {
-        const uEl = document.getElementById('loginUsername');
-        const pEl = document.getElementById('loginPassword');
-        if (uEl) uEl.value = u;
-        if (pEl) pEl.value = p;
-      };
 
       window.handlePortalLogin = function(ev) {
         if (ev) ev.preventDefault();
@@ -1393,7 +1436,6 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         const errBox = document.getElementById('loginErrorBox');
         if (errBox) errBox.classList.add('hidden');
 
-        // 1. Check against local/embedded code store immediately
         if (u.toLowerCase() === portalAdmin.username.toLowerCase() && p === portalAdmin.password) {
           setActiveSession({
             username: portalAdmin.username,
@@ -1411,7 +1453,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         if (matchedUser) {
           if (matchedUser.active === false) {
             if (errBox) {
-              errBox.textContent = 'This user account has been disabled by the Administrator.';
+              errBox.textContent = 'This account is currently paused by the Administrator.';
               errBox.classList.remove('hidden');
             }
             return false;
@@ -1425,7 +1467,6 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
           return false;
         }
 
-        // 2. If running on web server, also verify against live /api/login
         if (window.location.protocol !== 'file:') {
           fetch('/api/login', {
             method: 'POST',
@@ -1453,7 +1494,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         }
 
         if (errBox) {
-          errBox.textContent = 'Invalid username or password. Check users_store.py credentials.';
+          errBox.textContent = 'Invalid username or password.';
           errBox.classList.remove('hidden');
         }
         return false;
@@ -1489,7 +1530,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
 
         if (!uname || !pwd) return false;
         if (uname.toLowerCase() === portalAdmin.username.toLowerCase()) {
-          showAdminBanner("Cannot overwrite the single Administrator username ('admin').", true);
+          showAdminBanner("Cannot overwrite the Administrator username ('" + portalAdmin.username + "').", true);
           return false;
         }
 
@@ -1513,19 +1554,18 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
                 document.getElementById('newUsername').value = '';
                 document.getElementById('newPassword').value = '';
                 document.getElementById('newDisplayName').value = '';
-                showAdminBanner("Saved user '" + uname + "' directly into users_store.py code!", false);
+                showAdminBanner("Member '" + uname + "' registered successfully.", false);
               } else {
-                showAdminBanner((res.body && res.body.error) || 'Failed to save user.', true);
+                showAdminBanner((res.body && res.body.error) || 'Failed to register member.', true);
               }
             })
             .catch(function(err) {
-              showAdminBanner('Server error: ' + err, true);
+              showAdminBanner('Error: ' + err, true);
             });
           return false;
         }
 
-        // Standalone file:// mode fallback
-        const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+        const nowStr = new Date(Date.now() + 6 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' BST';
         const existingIdx = portalUsers.findIndex(function(u) {
           return String(u.username || '').toLowerCase() === uname.toLowerCase();
         });
@@ -1549,7 +1589,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         document.getElementById('newUsername').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('newDisplayName').value = '';
-        showAdminBanner("Added user '" + uname + "' (Run `python app.py` or click Export `users_store.py` to save to disk).", false);
+        showAdminBanner("Member '" + uname + "' registered.", false);
         return false;
       };
 
@@ -1566,7 +1606,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
                 portalUsers = data.users;
                 localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(portalUsers));
                 renderAdminUsersTable();
-                showAdminBanner("Updated status for '" + username + "' in users_store.py.", false);
+                showAdminBanner("Updated access status for '" + username + "'.", false);
               }
             });
           return;
@@ -1593,7 +1633,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
                 portalUsers = data.users;
                 localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(portalUsers));
                 renderAdminUsersTable();
-                showAdminBanner("Deleted user '" + username + "' from users_store.py.", false);
+                showAdminBanner("Removed member '" + username + "'.", false);
               }
             });
           return;
@@ -1603,24 +1643,6 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         });
         localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(portalUsers));
         renderAdminUsersTable();
-      };
-
-      window.downloadUsersStorePy = function() {
-        let pyLines = [
-          '# Code-Persisted User & Administrator Store (users_store.py)',
-          '',
-          'ADMIN_ACCOUNT = ' + JSON.stringify(portalAdmin, null, 4).replace(/true/g, 'True').replace(/false/g, 'False'),
-          '',
-          '# BEGIN_USERS_LIST',
-          'USERS_LIST = ' + JSON.stringify(portalUsers, null, 4).replace(/true/g, 'True').replace(/false/g, 'False'),
-          '# END_USERS_LIST',
-          ''
-        ];
-        const blob = new Blob([pyLines.join('\n')], { type: 'text/x-python' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'users_store.py';
-        a.click();
       };
 
       window.triggerGoldPortalRefresh = function(forceQuantOnly) {
@@ -1641,7 +1663,7 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
           body: JSON.stringify({ fetch_only: Boolean(forceQuantOnly) })
         })
           .then(function(r) { return r.json(); })
-          .then(function(res) {
+          .then(function() {
             window.location.reload();
           })
           .catch(function() {
@@ -1652,10 +1674,10 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
       updatePortalUI();
       syncUsersFromServerIfAvailable();
 
-      Chart.defaults.color = '#94a3b8';
-      Chart.defaults.font.family = "'JetBrains Mono', 'Inter', sans-serif";
+      // Warm Editorial Chart.js Theme
+      Chart.defaults.color = '#5C5346';
+      Chart.defaults.font.family = "'Plus Jakarta Sans', -apple-system, sans-serif";
 
-      // Chart 1: Horizontal Bar Chart of the 4 Gold Impact Wedges (-100 to +100)
       const barCtx = document.getElementById('wedgeBarChart');
       if (barCtx) {
         new Chart(barCtx, {
@@ -1663,13 +1685,13 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
           data: {
             labels: wedgeData.labels,
             datasets: [{
-              label: 'Net Gold Sentiment Score (-100 to +100)',
+              label: 'Net Gold Driver Score (-100 to +100)',
               data: wedgeData.scores,
               backgroundColor: wedgeData.bgColors,
               borderColor: wedgeData.borderColors,
               borderWidth: 1.5,
-              borderRadius: 6,
-              barThickness: 28
+              borderRadius: 5,
+              barThickness: 26
             }]
           },
           options: {
@@ -1681,28 +1703,31 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
                 min: -100,
                 max: 100,
                 grid: {
-                  color: 'rgba(51, 65, 85, 0.45)',
-                  zeroLineColor: '#f59e0b'
+                  color: 'rgba(213, 203, 184, 0.55)',
+                  zeroLineColor: '#9A6B16'
                 },
                 ticks: {
+                  color: '#5C5346',
                   callback: function(value) { return (value > 0 ? '+' : '') + value; }
                 }
               },
               y: {
                 grid: { display: false },
-                ticks: { color: '#e2e8f0', font: { size: 11, weight: '600' } }
+                ticks: { color: '#1F1C18', font: { size: 11, weight: '600' } }
               }
             },
             plugins: {
               legend: { display: false },
               tooltip: {
-                backgroundColor: '#0f172a',
-                borderColor: '#334155',
+                backgroundColor: '#1F1C18',
+                titleColor: '#FAF6EE',
+                bodyColor: '#FAF6EE',
+                borderColor: '#9A6B16',
                 borderWidth: 1,
                 callbacks: {
                   label: function(context) {
                     const v = context.parsed.x;
-                    return ' Net Gold Wedge Score: ' + (v > 0 ? '+' : '') + v.toFixed(1) + ' / 100';
+                    return ' Score: ' + (v > 0 ? '+' : '') + v.toFixed(1) + ' / 100';
                   }
                 }
               }
@@ -1711,7 +1736,6 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
         });
       }
 
-      // Chart 2: Doughnut Chart of Weighted Bullish vs. Bearish vs. Neutral News
       const doughnutCtx = document.getElementById('newsDoughnutChart');
       if (doughnutCtx) {
         new Chart(doughnutCtx, {
@@ -1721,39 +1745,41 @@ _TERMINAL_HTML_TEMPLATE = r"""<!DOCTYPE html>
             datasets: [{
               data: doughnutData.weights,
               backgroundColor: [
-                'rgba(16, 185, 129, 0.80)',
-                'rgba(239, 68, 68, 0.80)',
-                'rgba(245, 158, 11, 0.80)'
+                'rgba(27, 107, 69, 0.85)',
+                'rgba(168, 40, 40, 0.85)',
+                'rgba(180, 123, 28, 0.85)'
               ],
               borderColor: [
-                '#10b981',
-                '#ef4444',
-                '#f59e0b'
+                '#FFFDF9',
+                '#FFFDF9',
+                '#FFFDF9'
               ],
               borderWidth: 2,
-              hoverOffset: 6
+              hoverOffset: 5
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '64%',
+            cutout: '62%',
             plugins: {
               legend: {
                 position: 'bottom',
                 labels: {
-                  color: '#e2e8f0',
-                  padding: 14,
+                  color: '#1F1C18',
+                  padding: 12,
                   font: { size: 11 }
                 }
               },
               tooltip: {
-                backgroundColor: '#0f172a',
-                borderColor: '#334155',
+                backgroundColor: '#1F1C18',
+                titleColor: '#FAF6EE',
+                bodyColor: '#FAF6EE',
+                borderColor: '#9A6B16',
                 borderWidth: 1,
                 callbacks: {
                   label: function(context) {
-                    return ' Total Impact Weight: ' + context.parsed;
+                    return ' Total Priority Weight: ' + context.parsed;
                   }
                 }
               }
@@ -1774,7 +1800,7 @@ def generate_html_report(
     output_path: str = DEFAULT_REPORT_FILENAME,
 ) -> str:
     """
-    Render the standalone Gold (`XAUUSD` / `GC=F`) trading terminal HTML report
+    Render the Gold (`XAUUSD` / `GC=F`) desk research HTML report
     to `xauusd_intraday_report.html` and return the resolved absolute file path.
     """
     if analysis is None:
