@@ -706,69 +706,100 @@ def _reconcile_and_validate_analysis(
         "weigh on bullion",
     )
     # Map raw breaking news metadata by normalized headline and fuzzy tokens for cross-model anchoring
-    raw_news_list: List[Dict[str, Any]] = list(payload.get("intraday_breaking_news") or [])
-    raw_news_map: Dict[str, Dict[str, Any]] = {}
-    for raw_item in raw_news_list:
-        hl_key = (raw_item.get("headline") or "").strip().lower()
-        if hl_key:
-            raw_news_map[hl_key] = raw_item
+# Canonical 18-Story Reconciler with Institutional Polarity Guardrails
+    # Anchor strictly to the deduplicated 18 headlines from data_fetcher.py
+    raw_news_list = payload.get("intraday_breaking_news") or []
+    llm_items = list(output.get("news_items") or [])
 
     reconciled_news: List[Dict[str, Any]] = []
     wedge_scores_by_id: Dict[int, List[Tuple[int, int]]] = {1: [], 2: [], 3: [], 4: []}
 
-    for idx_item, item in enumerate(output.get("news_items") or []):
-        n = dict(item)
-        hl_lower = (n.get("headline") or "").strip().lower()
-        raw_ref = raw_news_map.get(hl_lower)
-        if raw_ref is None and hl_lower:
-            hl_words = set(re.findall(r"[a-z0-9]{3,}", hl_lower))
-            best_ov = 0.0
-            for r_cand in raw_news_list:
-                r_words = set(re.findall(r"[a-z0-9]{3,}", (r_cand.get("headline") or "").lower()))
-                if hl_words and r_words:
-                    ov = len(hl_words & r_words) / max(1, min(len(hl_words), len(r_words)))
-                    if ov > best_ov and ov >= 0.55:
-                        best_ov = ov
-                        raw_ref = r_cand
-        if raw_ref is None and idx_item < len(raw_news_list):
-            raw_ref = raw_news_list[idx_item]
-        if raw_ref is not None:
-            n["headline"] = raw_ref.get("headline") or n.get("headline")
-            n["source_time"] = raw_ref.get("source_time") or n.get("source_time")
-            hl_lower = (n.get("headline") or "").strip().lower()
+    # Macro cues for institutional polarity enforcement
+    hawkish_cues = (
+        "rate hold", "rates steady", "rates unchanged", "rate pause", "hawkish",
+        "core pce", "inflation rose", "inflation accelerates", "jobless claims hover",
+        "57-year lows", "yield hovers above 5%", "yields rise", "catch-up to quell inflation",
+        "warsh", "split fed", "december hike", "dollar index remains bullish",
+        "dollar remains bullish", "dxy remains bullish", "bulls seem hesitant",
+        "no fed rate hike", "leaving interest rates unchanged"
+    )
+    peace_cues = (
+        "peace deal", "peace talks", "iran diplomacy", "diplomacy against",
+        "talks for a temporary peace", "ceasefire", "weigh iran diplomacy",
+        "temporary peace deal"
+    )
 
-        score = int(n.get("sentiment_score", 0))
-        bias = (n.get("gold_bias") or "NEUTRAL").upper()
-        weight = int(n.get("impact_weight", 5))
-        wedge_cat = n.get("gold_wedge_category") or ""
+    for r_item in raw_news_list:
+        r_hl = (r_item.get("headline") or "").strip()
+        r_hl_lower = r_hl.lower()
+        r_words = set(re.findall(r"[a-z0-9]{3,}", r_hl_lower))
+        wedge_info = r_item.get("gold_wedge") or {}
+        wedge_name = wedge_info.get("wedge_name") or GOLD_IMPACT_WEDGES["WEDGE_4_CENTRAL_BANK_ETF_FLOWS"]["wedge_name"]
+        impact_wt = int(wedge_info.get("impact_weight", 6))
 
-        # Lock wedge category to pre-classified wedge
-        if raw_ref and (raw_ref.get("gold_wedge") or {}).get("wedge_name"):
-            wedge_cat = raw_ref["gold_wedge"]["wedge_name"]
-            n["gold_wedge_category"] = wedge_cat
+        # Find best matching LLM evaluation
+        matched_llm: Optional[Dict[str, Any]] = None
+        best_ov = 0.0
+        for cand in llm_items:
+            cand_hl = (cand.get("headline") or "").strip().lower()
+            if cand_hl == r_hl_lower:
+                matched_llm = cand
+                break
+            cand_words = set(re.findall(r"[a-z0-9]{3,}", cand_hl))
+            if r_words and cand_words:
+                ov = len(r_words & cand_words) / max(1, min(len(r_words), len(cand_words)))
+                if ov > best_ov and ov >= 0.45:
+                    best_ov = ov
+                    matched_llm = cand
 
-        # NO BLENDER: Let the model evaluate the news without heuristic keyword blending.
-        # Simply enforce directional sanity:
-        # If model labeled BULLISH GOLD, score must be >= 15
+        if matched_llm is not None:
+            score = int(matched_llm.get("sentiment_score", 0))
+            bias = str(matched_llm.get("gold_bias") or "NEUTRAL").upper()
+            mechanism = str(matched_llm.get("gold_transmission_mechanism") or "").strip()
+        else:
+            det_eval = _score_headline_deterministically(r_item)
+            score = det_eval.sentiment_score
+            bias = det_eval.gold_bias
+            mechanism = det_eval.gold_transmission_mechanism
+
+        # INSTITUTIONAL SANITY GUARDRAIL: Prevent LLM economic inversions
+        comb_text = f"{r_hl_lower} {mechanism.lower()}"
+        is_hawkish = any(cue in comb_text for cue in hawkish_cues)
+        is_peace = any(cue in comb_text for cue in peace_cues)
+
+        if "BULL" in bias and (is_hawkish or is_peace):
+            logger.warning("Corrected inverted LLM hallucination on '%s' from BULLISH to BEARISH", r_hl[:50])
+            bias = "BEARISH GOLD"
+            score = -abs(score) if abs(score) >= 20 else -35
+            if is_peace:
+                mechanism = "Geopolitical diplomacy and peace negotiations de-escalate conflict risks and deflate safe-haven premia in Gold."
+            else:
+                mechanism = "Hawkish Fed policy rate posture and elevated Treasury yields raise the real opportunity cost of holding non-yielding Gold."
+
+        # Enforce exact directional polarity clamp
         if "BULL" in bias:
             bias = "BULLISH GOLD"
             score = max(15, min(100, score if score >= 15 else 30))
-        # If model labeled BEARISH GOLD, score must be <= -15
         elif "BEAR" in bias:
             bias = "BEARISH GOLD"
             score = min(-15, max(-100, score if score <= -15 else -30))
-        # If model labeled NEUTRAL, score must be near zero
         else:
             bias = "NEUTRAL"
             score = max(-14, min(14, score))
 
-        n["sentiment_score"] = score
-        n["gold_bias"] = bias
-        n["impact_weight"] = max(1, min(10, weight))
-        reconciled_news.append(n)
+        item_dict = {
+            "headline": r_hl,
+            "source_time": r_item.get("source_time") or f"{r_item.get('source', 'News')} | {r_item.get('published_utc', '')}",
+            "gold_wedge_category": wedge_name,
+            "impact_weight": max(1, min(10, impact_wt)),
+            "gold_bias": bias,
+            "sentiment_score": score,
+            "gold_transmission_mechanism": mechanism,
+        }
+        reconciled_news.append(item_dict)
 
-        w_id = _infer_wedge_id(wedge_cat, 4)
-        wedge_scores_by_id[w_id].append((n["sentiment_score"], n["impact_weight"]))
+        w_id = int(wedge_info.get("wedge_id") or _infer_wedge_id(wedge_name, 4))
+        wedge_scores_by_id[w_id].append((score, impact_wt))
 
     output["news_items"] = reconciled_news
 
@@ -1115,33 +1146,7 @@ def _analyze_with_groq(
                 validated = GoldAnalysisReport.model_validate(normalized_dict)
                 output = validated.model_dump()
 
-                # Ensure all 18 breaking headlines are present even if the LLM abbreviated the list
-                existing_titles = [
-                    (item.get("headline") or "").strip().lower()
-                    for item in output.get("news_items", [])
-                ]
-                for raw_h in (batched_prompt_payload.get("intraday_breaking_headlines") or []):
-                    h_text = (raw_h.get("headline") or "").strip()
-                    h_low = h_text.lower()
-                    already_present = any(
-                        h_low == et or (len(h_low) >= 30 and h_low[:30] == et[:30])
-                        for et in existing_titles
-                    )
-                    if h_text and not already_present:
-                        fallback_item = _score_headline_deterministically(
-                            {
-                                "headline": h_text,
-                                "summary": raw_h.get("summary", ""),
-                                "source_time": raw_h.get("source_time", ""),
-                                "gold_wedge": {
-                                    "wedge_name": raw_h.get("pre_classified_wedge")
-                                    or GOLD_IMPACT_WEDGES["WEDGE_4_CENTRAL_BANK_ETF_FLOWS"]["wedge_name"],
-                                    "impact_weight": raw_h.get("suggested_impact_weight") or 6,
-                                },
-                            }
-                        )
-                        output.setdefault("news_items", []).append(fallback_item.model_dump())
-                        existing_titles.append(h_low)
+                # News reconciliation will strictly match the 18 canonical headlines in _reconcile_and_validate_analysis
 
                 output["analysis_engine"] = f"groq_api ({groq_model})"
                 logger.info("Groq fallback model '%s' succeeded!", groq_model)
