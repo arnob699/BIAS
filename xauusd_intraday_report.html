@@ -3900,6 +3900,41 @@
       updatePortalUI();
       syncUsersFromServerIfAvailable();
 
+      // Real-time Multi-User Market Update Broadcast Watcher
+      if (window.location.protocol !== 'file:') {
+        let knownReportVersion = null;
+        let selfTriggeredRefresh = false;
+        const origRefresh = window.triggerGoldPortalRefresh;
+        window.triggerGoldPortalRefresh = function(forceQuantOnly) {
+          selfTriggeredRefresh = true;
+          return origRefresh(forceQuantOnly);
+        };
+
+        function pollReportVersion() {
+          fetch('/api/status', { method: 'GET', headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+              if (!data || !data.report_version) return;
+              const spinner = document.getElementById('refreshSpinner');
+              const btnLive = document.getElementById('btnRefreshLive');
+              if (data.is_refreshing && !selfTriggeredRefresh) {
+                if (spinner) spinner.classList.remove('hidden');
+                if (btnLive) btnLive.title = 'Another user/admin is currently updating market data...';
+              }
+              if (knownReportVersion === null) {
+                knownReportVersion = data.report_version;
+              } else if (data.report_version !== knownReportVersion && !data.is_refreshing) {
+                knownReportVersion = data.report_version;
+                window.location.reload();
+              }
+            })
+            .catch(function() {});
+        }
+
+        pollReportVersion();
+        setInterval(pollReportVersion, 6000);
+      }
+
       // Warm Editorial Chart.js Theme
       Chart.defaults.color = '#5C5346';
       Chart.defaults.font.family = "'Plus Jakarta Sans', -apple-system, sans-serif";
