@@ -45,6 +45,7 @@ from config import (
     GEMINI_API_KEY,
     GEMINI_MODEL,
     GOLD_IMPACT_WEDGES,
+    GROQ_API_KEY,
     PRIMARY_ASSET,
     TARGET_TICKERS,
 )
@@ -276,7 +277,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
     args = parse_args(argv)
 
-    has_live_api_key = bool(GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_api_key_here")
+    has_live_api_key = bool((GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_api_key_here") or (GROQ_API_KEY and GROQ_API_KEY != "your_groq_api_key_here"))
 
     if args.demo:
         logging.info("Running in --demo mode: building Gold (XAUUSD / GC=F) market & sentiment dataset...")
@@ -302,7 +303,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # Validate against GoldAnalysisReport Pydantic schema
     validated = GoldAnalysisReport.model_validate(
-        {k: v for k, v in analysis.items() if k != "analysis_engine"}
+        {k: v for k, v in analysis.items() if k not in ("analysis_engine", "engine_error_detail")}
     )
 
     if args.dump_json:
