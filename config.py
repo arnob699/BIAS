@@ -351,6 +351,33 @@ GOLD_DIRECT_RSS_FEEDS: List[Dict[str, str]] = [
 
 # Noise patterns (retail chart uploads, junior exploration drill PRs, non-financial safe-haven stories, single-stock PR)
 EXCLUDED_NOISE_PATTERNS: List[str] = [
+    "swedish",
+    "sweden",
+    "french consumer",
+    "italian consumer",
+    "spanish consumer",
+    "german consumer",
+    "per bhari",
+    "bhari",
+    "tola",
+    "sovereign",
+    "gold rate today",
+    "silver rate today",
+    "gold price today",
+    "silver price today",
+    "what to expect from",
+    "what to expect",
+    "jewellery",
+    "jewelry",
+    "mcx",
+    "trading lesson",
+    "a trading lesson",
+    "tradingview",
+    "pine script",
+    "measure the candle",
+    "for oanda:",
+    "for vantage:",
+    "my trading idea",
     "chart image by",
     "g/t au",
     "g/t ag",
@@ -397,6 +424,9 @@ def is_headline_gold_or_macro_relevant(text: str) -> bool:
     """
     normalized = (text or "").lower()
     if any(noise in normalized for noise in EXCLUDED_NOISE_PATTERNS):
+        return False
+    # Filter out non-English articles (e.g. German/umlauts or non-Latin scripts)
+    if any(ord(char) > 127 for char in text) and not any(k in normalized for k in ("gold", "xauusd", "fed", "cpi")):
         return False
     for wedge in GOLD_IMPACT_WEDGES.values():
         if any(_kw_in_text(kw, normalized) for kw in wedge["keywords"]):
