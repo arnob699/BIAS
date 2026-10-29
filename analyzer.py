@@ -1089,10 +1089,8 @@ def _analyze_with_groq(
                     attempt + 1,
                     max_retries_per_model,
                 )
-                reasoning_mode = "none" if "qwen" in groq_model.lower() else "low"
                 req_body: Dict[str, Any] = {
                     "model": groq_model,
-                    "reasoning_effort": reasoning_mode,
                     "messages": [
                         {"role": "system", "content": groq_system_prompt},
                         {
@@ -1103,8 +1101,10 @@ def _analyze_with_groq(
                     "response_format": {"type": "json_object"},
                     "temperature": 0.0,
                     "seed": 42,
-                    "max_tokens": 3200,
+                    "max_tokens": 2400,
                 }
+                if "gpt-oss" in groq_model.lower():
+                    req_body["reasoning_effort"] = "low" 
                 resp = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers={
