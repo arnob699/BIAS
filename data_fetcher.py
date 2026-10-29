@@ -487,9 +487,9 @@ def _fetch_single_gold_snapshot_ticker(
     candidates = [cfg["symbol"]] + list(cfg.get("fallback_symbols", []))
 
     for symbol in candidates:
-        quote = _fetch_via_yfinance(symbol)
+        quote = _fetch_via_yahoo_chart_api(symbol, session)
         if quote is None:
-            quote = _fetch_via_yahoo_chart_api(symbol, session)
+            quote = _fetch_via_yfinance(symbol)
 
         if quote is not None:
             gold_effect, signal_text = _evaluate_gold_impact_signal(
@@ -702,6 +702,8 @@ def deduplicate_gold_news_items(
         key=lambda item: (
             item.get("published_epoch", 0),
             (item.get("gold_wedge") or {}).get("impact_weight", 5),
+            (item.get("headline") or "").lower(),
+            (item.get("source") or "").lower(),
         ),
         reverse=True,
     )
