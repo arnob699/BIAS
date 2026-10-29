@@ -20,6 +20,29 @@ load_dotenv("/etc/secrets/.env", override=True)
 load_dotenv(".env", override=True)
 load_dotenv(".env.example", override=False)
 
+
+def _heal_env_file_typos(env_path: str) -> None:
+    """Also parse lines formatted as KEY-VALUE (e.g. GEMINI_API_KEY-...) in Render Secret Files."""
+    try:
+        if not os.path.isfile(env_path):
+            return
+        with open(env_path, "r", encoding="utf-8", errors="ignore") as fh:
+            for raw_line in fh:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                for k in ("GEMINI_API_KEY", "GEMINI_MODEL", "GROQ_API_KEY", "GROQ_MODEL"):
+                    if line.startswith(f"{k}-") and "=" not in line:
+                        val = line[len(k) + 1 :].strip().strip('"').strip("'")
+                        if val:
+                            os.environ[k] = val
+    except Exception:
+        pass
+
+
+_heal_env_file_typos("/etc/secrets/.env")
+_heal_env_file_typos(".env")
+
 # ---------------------------------------------------------------------------
 # API & Free-Tier Model Fallback Configuration (Gemini Primary -> Groq Fallback)
 # ---------------------------------------------------------------------------
@@ -27,8 +50,6 @@ GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
 GEMINI_FALLBACK_MODELS: List[str] = [
     GEMINI_MODEL,
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
 ]
 # Deduplicate model list while preserving order
 GEMINI_MODEL_CHAIN: List[str] = list(dict.fromkeys(GEMINI_FALLBACK_MODELS))
