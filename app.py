@@ -34,6 +34,7 @@ import json
 import logging
 from pathlib import Path
 import re
+import time
 from typing import Any, Dict, Optional
 import warnings
 import webbrowser
@@ -61,6 +62,8 @@ logger = logging.getLogger(__name__)
 _REPORT_PATH = Path(_script_dir) / DEFAULT_REPORT_FILENAME
 _LAST_PAYLOAD_CACHE: Optional[Dict[str, Any]] = None
 _LAST_ANALYSIS_CACHE: Optional[Dict[str, Any]] = None
+_REPORT_VERSION: int = int(time.time() * 1000)
+_IS_REFRESHING: bool = False
 
 
 def refresh_gold_terminal_report(force_quant_only: bool = False) -> str:
@@ -71,7 +74,8 @@ def refresh_gold_terminal_report(force_quant_only: bool = False) -> str:
 
     Guaranteed to succeed whether API keys are online, rate-limited, or offline.
     """
-    global _LAST_PAYLOAD_CACHE, _LAST_ANALYSIS_CACHE
+    global _LAST_PAYLOAD_CACHE, _LAST_ANALYSIS_CACHE, _REPORT_VERSION, _IS_REFRESHING
+    _IS_REFRESHING = True
 
     try:
         logger.info("Fetching live Gold market snapshot, 18 headlines & Forex Factory Gold Calendar...")
@@ -108,7 +112,12 @@ def refresh_gold_terminal_report(force_quant_only: bool = False) -> str:
 
     _LAST_PAYLOAD_CACHE = payload
     _LAST_ANALYSIS_CACHE = analysis
-    return generate_html_report(payload, analysis, str(_REPORT_PATH))
+    try:
+        out_path = generate_html_report(payload, analysis, str(_REPORT_PATH))
+        _REPORT_VERSION = int(time.time() * 1000)
+        return out_path
+    finally:
+        _IS_REFRESHING = False
 
 
 def _sync_users_into_existing_html() -> None:
@@ -169,8 +178,17 @@ class GoldPortalHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = self.path.split("?", 1)[0]
 
-        if path in ("/health", "/healthz"):
-            self._send_json(200, {"status": "ok", "service": "xauusd-gold-portal"})
+        if path in ("/health", "/healthz", "/api/status"):
+            self._send_json(
+                200,
+                {
+                    "status": "ok",
+                    "service": "xauusd-gold-portal",
+                    "report_version": _REPORT_VERSION,
+                    "is_refreshing": _IS_REFRESHING,
+                    "last_updated_bst": (_LAST_PAYLOAD_CACHE or {}).get("generated_at_bst", ""),
+                },
+            )
             return
 
         if path == "/api/users":
