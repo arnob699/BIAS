@@ -6,7 +6,7 @@ Key Features:
 1. Works 100% whether `GEMINI_API_KEY` / `GROQ_API_KEY` are online, rate-limited,
    or completely offline (automatically falls back to the built-in Quantitative
    Gold Correlation Engine and offline snapshot cache).
-2. Single Administrator (`admin` / `admin123`) can create, enable/disable, and
+2. Single Administrator (`arnob` / `arnob69`) can create, enable/disable, and
    delete multiple User accounts directly from the Web UI.
 3. Zero Database Required: All users are persisted directly inside the Python
    code file `users_store.py` (and synced into `xauusd_intraday_report.html`).
