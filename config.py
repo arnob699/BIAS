@@ -31,7 +31,7 @@ def _heal_env_file_typos(env_path: str) -> None:
                 line = raw_line.strip()
                 if not line or line.startswith("#"):
                     continue
-                for k in ("GEMINI_API_KEY", "GEMINI_MODEL", "GROQ_API_KEY", "GROQ_MODEL"):
+                for k in ("GEMINI_API_KEYS", "GEMINI_API_KEY", "GEMINI_MODEL", "GROQ_API_KEYS", "GROQ_API_KEY", "GROQ_MODEL"):
                     if line.startswith(f"{k}-") and "=" not in line:
                         val = line[len(k) + 1 :].strip().strip('"').strip("'")
                         if val:
@@ -43,10 +43,27 @@ def _heal_env_file_typos(env_path: str) -> None:
 _heal_env_file_typos("/etc/secrets/.env")
 _heal_env_file_typos(".env")
 
+
+def _parse_api_keys(*env_var_names: str) -> List[str]:
+    """Parse comma, semicolon, or newline separated API keys from environment variables."""
+    keys: List[str] = []
+    for var in env_var_names:
+        raw = os.getenv(var, "").strip()
+        if not raw:
+            continue
+        for chunk in re.split(r"[,;\n\r]+", raw):
+            clean = chunk.strip().strip('"').strip("'")
+            if clean and not clean.startswith("your_") and not clean.startswith("#"):
+                keys.append(clean)
+    return list(dict.fromkeys(keys))
+
+
 # ---------------------------------------------------------------------------
 # API & Free-Tier Model Fallback Configuration (Gemini Primary -> Groq Fallback)
+# Supports multiple fallback keys: GEMINI_API_KEY=key1,key2,key3 or GEMINI_API_KEYS=...
 # ---------------------------------------------------------------------------
-GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_API_KEYS: List[str] = _parse_api_keys("GEMINI_API_KEYS", "GEMINI_API_KEY")
+GEMINI_API_KEY: str = GEMINI_API_KEYS[0] if GEMINI_API_KEYS else ""
 GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
 GEMINI_FALLBACK_MODELS: List[str] = [
     GEMINI_MODEL,
@@ -54,7 +71,8 @@ GEMINI_FALLBACK_MODELS: List[str] = [
 # Deduplicate model list while preserving order
 GEMINI_MODEL_CHAIN: List[str] = list(dict.fromkeys(GEMINI_FALLBACK_MODELS))
 
-GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "").strip()
+GROQ_API_KEYS: List[str] = _parse_api_keys("GROQ_API_KEYS", "GROQ_API_KEY")
+GROQ_API_KEY: str = GROQ_API_KEYS[0] if GROQ_API_KEYS else ""
 GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b").strip()
 GROQ_FALLBACK_MODELS: List[str] = [
     GROQ_MODEL,
