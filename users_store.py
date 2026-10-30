@@ -38,14 +38,6 @@ ADMIN_ACCOUNT: Dict[str, Any] = {
 # ---------------------------------------------------------------------------
 # BEGIN_USERS_LIST
 USERS_LIST: List[Dict[str, Any]] = [
-       {
-        "username": "pallab",
-        "password": "pallab1234",
-        "display_name": "Pallab Ghosh (Senior Trader)",
-        "role": "user",
-        "active": True,
-        "created_at": "30 Oct 2026, 03:30 PM BST",
-    },
 ]
 # END_USERS_LIST
 
