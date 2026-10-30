@@ -35,12 +35,10 @@ except ImportError:
 
 from config import (
     GEMINI_API_KEY,
-    GEMINI_API_KEYS,
     GEMINI_MODEL,
     GEMINI_MODEL_CHAIN,
     GOLD_IMPACT_WEDGES,
     GROQ_API_KEY,
-    GROQ_API_KEYS,
     GROQ_MODEL_CHAIN,
 )
 
@@ -48,9 +46,7 @@ logger = logging.getLogger(__name__)
 
 # Cache Gemini daily Free-Tier exhaustion so repeated refreshes skip straight to Groq in 0ms
 _EXHAUSTED_GEMINI_MODELS: set = set()
-_EXHAUSTED_GEMINI_KEYS: set = set()
 _EXHAUSTED_GROQ_MODELS: set = set()
-_EXHAUSTED_GROQ_KEYS: set = set()
 _LAST_GEMINI_ERROR_SUMMARY: Optional[str] = None
 
 
@@ -1021,9 +1017,8 @@ def _analyze_with_groq(
     """
     Automatic fallback to Groq API (`https://api.groq.com/openai/v1/chat/completions`)
     when Google Gemini Free Tier hits HTTP 429 quota limits.
-    Supports multi-key fallback across all keys in GROQ_API_KEYS.
     """
-    if not GROQ_API_KEYS:
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
         return None
 
     # Build a token-efficient payload to stay well under Groq Free-Tier 8,000 TPM limit
@@ -1080,125 +1075,91 @@ def _analyze_with_groq(
         "Include all 18 headlines in `news_items` and keep each `gold_transmission_mechanism` to 1 short sentence."
     )
 
-    global _EXHAUSTED_GROQ_MODELS, _EXHAUSTED_GROQ_KEYS
-    groq_keys_to_try = [k for k in GROQ_API_KEYS if k not in _EXHAUSTED_GROQ_KEYS]
-    if not groq_keys_to_try and GROQ_API_KEYS:
-        groq_keys_to_try = list(GROQ_API_KEYS)
+    global _EXHAUSTED_GROQ_MODELS
+    groq_models_to_try = [
+        m for m in GROQ_MODEL_CHAIN if m not in _EXHAUSTED_GROQ_MODELS
+    ] or list(GROQ_MODEL_CHAIN)
 
-    for k_idx, active_groq_key in enumerate(groq_keys_to_try):
-        key_num = GROQ_API_KEYS.index(active_groq_key) + 1 if active_groq_key in GROQ_API_KEYS else k_idx + 1
-        key_tag = f"Key #{key_num}" if len(GROQ_API_KEYS) > 1 else ""
-
-        groq_models_to_try = [
-            m for m in GROQ_MODEL_CHAIN if m not in _EXHAUSTED_GROQ_MODELS
-        ] or list(GROQ_MODEL_CHAIN)
-
-        key_failed = False
-        for groq_model in groq_models_to_try:
-            for attempt in range(max_retries_per_model):
-                try:
-                    logger.info(
-                        "Sending single batched Gold analysis request to Groq model '%s'%s (attempt %d/%d)...",
-                        groq_model,
-                        f" using {key_tag}" if key_tag else "",
-                        attempt + 1,
-                        max_retries_per_model,
-                    )
-                    req_body: Dict[str, Any] = {
-                        "model": groq_model,
-                        "messages": [
-                            {"role": "system", "content": groq_system_prompt},
-                            {
-                                "role": "user",
-                                "content": f"Return JSON GoldAnalysisReport for:\n{compact_payload_str}",
-                            },
-                        ],
-                        "response_format": {"type": "json_object"},
-                        "temperature": 0.0,
-                        "seed": 42,
-                        "max_tokens": 2400,
-                    }
-                    if "gpt-oss" in groq_model.lower():
-                        req_body["reasoning_effort"] = "low"
-                    resp = requests.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers={
-                            "Authorization": f"Bearer {active_groq_key}",
-                            "Content-Type": "application/json",
+    for groq_model in groq_models_to_try:
+        for attempt in range(max_retries_per_model):
+            try:
+                logger.info(
+                    "Sending single batched Gold analysis request to Groq fallback model '%s' (attempt %d/%d)...",
+                    groq_model,
+                    attempt + 1,
+                    max_retries_per_model,
+                )
+                req_body: Dict[str, Any] = {
+                    "model": groq_model,
+                    "messages": [
+                        {"role": "system", "content": groq_system_prompt},
+                        {
+                            "role": "user",
+                            "content": f"Return JSON GoldAnalysisReport for:\n{compact_payload_str}",
                         },
-                        json=req_body,
-                        timeout=45,
-                    )
+                    ],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.0,
+                    "seed": 42,
+                    "max_tokens": 2400,
+                }
+                if "gpt-oss" in groq_model.lower():
+                    req_body["reasoning_effort"] = "low" 
+                resp = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {GROQ_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json=req_body,
+                    timeout=45,
+                )
 
-                    if resp.status_code == 429:
-                        err_text = resp.text.lower()
-                        if "tokens per day" in err_text or "tpd" in err_text or "daily" in err_text:
-                            logger.warning(
-                                "Groq %s daily token quota exceeded on '%s'. Marking key as exhausted and trying next key...",
-                                key_tag or "API key", groq_model
-                            )
-                            _EXHAUSTED_GROQ_KEYS.add(active_groq_key)
-                            key_failed = True
-                            break
-                        else:
-                            logger.warning(
-                                "Groq HTTP 429 rate limit reached on '%s'%s. Trying next model...",
-                                groq_model,
-                                f" ({key_tag})" if key_tag else "",
-                            )
-                            _EXHAUSTED_GROQ_MODELS.add(groq_model)
-                            break
-
-                    if resp.status_code in (401, 403):
-                        logger.warning(
-                            "Groq %s returned HTTP %d (invalid/unauthorized). Trying next key...",
-                            key_tag or "API key", resp.status_code
-                        )
-                        _EXHAUSTED_GROQ_KEYS.add(active_groq_key)
-                        key_failed = True
-                        break
-
-                    if resp.status_code == 503 and attempt < max_retries_per_model - 1:
-                        sleep_sec = base_backoff_seconds * (2 ** attempt)
-                        logger.warning(
-                            "Groq HTTP 503 on '%s' (attempt %d/%d). Backing off %.1fs...",
-                            groq_model,
-                            attempt + 1,
-                            max_retries_per_model,
-                            sleep_sec,
-                        )
-                        time.sleep(sleep_sec)
-                        continue
-
-                    resp.raise_for_status()
-                    data = resp.json()
-                    raw_content = (
-                        (data.get("choices") or [{}])[0]
-                        .get("message", {})
-                        .get("content", "")
-                    )
-                    normalized_dict = _normalize_groq_raw_dict(raw_content)
-                    validated = GoldAnalysisReport.model_validate(normalized_dict)
-                    output = validated.model_dump()
-
-                    engine_label = f"groq_api ({groq_model})"
-                    if key_tag:
-                        engine_label += f" • {key_tag}"
-                    output["analysis_engine"] = engine_label
-                    logger.info("Groq model '%s'%s succeeded!", groq_model, f" ({key_tag})" if key_tag else "")
-                    return output
-
-                except Exception as exc:
+                if resp.status_code == 429:
                     logger.warning(
-                        "Groq fallback model '%s'%s failed (attempt %d/%d): %s",
+                        "Groq HTTP 429 rate limit reached on '%s'. Adding to exhausted set and trying next model...",
                         groq_model,
-                        f" ({key_tag})" if key_tag else "",
+                    )
+                    _EXHAUSTED_GROQ_MODELS.add(groq_model)
+                    break
+
+                if resp.status_code == 503 and attempt < max_retries_per_model - 1:
+                    sleep_sec = base_backoff_seconds * (2 ** attempt)
+                    logger.warning(
+                        "Groq HTTP 503 on '%s' (attempt %d/%d). Backing off %.1fs...",
+                        groq_model,
                         attempt + 1,
                         max_retries_per_model,
-                        exc,
+                        sleep_sec,
                     )
-                    break
-            if key_failed:
+                    time.sleep(sleep_sec)
+                    continue
+
+                resp.raise_for_status()
+                data = resp.json()
+                raw_content = (
+                    (data.get("choices") or [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                )
+                normalized_dict = _normalize_groq_raw_dict(raw_content)
+                validated = GoldAnalysisReport.model_validate(normalized_dict)
+                output = validated.model_dump()
+
+                # News reconciliation will strictly match the 18 canonical headlines in _reconcile_and_validate_analysis
+
+                output["analysis_engine"] = f"groq_api ({groq_model})"
+                logger.info("Groq fallback model '%s' succeeded!", groq_model)
+                return output
+
+            except Exception as exc:
+                logger.warning(
+                    "Groq fallback model '%s' failed (attempt %d/%d): %s",
+                    groq_model,
+                    attempt + 1,
+                    max_retries_per_model,
+                    exc,
+                )
                 break
 
     return None
@@ -1252,8 +1213,8 @@ def analyze_gold_market(
         ],
     }
 
-    has_gemini_key = bool(GEMINI_API_KEYS)
-    has_groq_key = bool(GROQ_API_KEYS)
+    has_gemini_key = bool(GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_api_key_here")
+    has_groq_key = bool(GROQ_API_KEY and GROQ_API_KEY != "your_groq_api_key_here")
 
     if not has_gemini_key and not has_groq_key:
         if allow_fallback_on_missing_key:
@@ -1269,89 +1230,66 @@ def analyze_gold_market(
             "Please configure a valid API key in `.env`."
         )
 
-    global _EXHAUSTED_GEMINI_MODELS, _EXHAUSTED_GEMINI_KEYS, _LAST_GEMINI_ERROR_SUMMARY
+    global _EXHAUSTED_GEMINI_MODELS, _LAST_GEMINI_ERROR_SUMMARY
     last_error: Optional[Exception] = None
 
-    def _format_gemini_error(exc_obj: Exception, m_name: str, k_tag: str = "") -> str:
+    def _format_gemini_error(exc_obj: Exception, m_name: str) -> str:
         raw_e = str(exc_obj)
         up_e = raw_e.upper()
-        tag_str = f" [{k_tag}]" if k_tag else ""
         if "429" in raw_e or "RESOURCE_EXHAUSTED" in up_e or "QUOTA" in up_e:
-            return f"Gemini ({m_name}){tag_str} HTTP 429 Quota Exhausted (RESOURCE_EXHAUSTED) → Auto-Switched"
+            return f"Gemini ({m_name}) HTTP 429 Quota Exhausted (RESOURCE_EXHAUSTED) → Auto-Switched to Groq"
         if "400" in raw_e or "API_KEY_INVALID" in up_e or "INVALID_ARGUMENT" in up_e:
-            return f"Gemini ({m_name}){tag_str} HTTP 400 API Key / Request Error → Auto-Switched"
+            return f"Gemini ({m_name}) HTTP 400 API Key / Request Error → Auto-Switched to Groq"
         if "403" in raw_e or "PERMISSION_DENIED" in up_e:
-            return f"Gemini ({m_name}){tag_str} HTTP 403 Permission Denied → Auto-Switched"
+            return f"Gemini ({m_name}) HTTP 403 Permission Denied → Auto-Switched to Groq"
         if "404" in raw_e or "NOT_FOUND" in up_e:
-            return f"Gemini ({m_name}){tag_str} HTTP 404 Model Unavailable → Auto-Switched"
+            return f"Gemini ({m_name}) HTTP 404 Model Unavailable → Auto-Switched to Groq"
         if "503" in raw_e or "UNAVAILABLE" in up_e:
-            return f"Gemini ({m_name}){tag_str} HTTP 503 Service Unavailable → Auto-Switched"
+            return f"Gemini ({m_name}) HTTP 503 Service Unavailable → Auto-Switched to Groq"
         short_msg = re.sub(r"\s+", " ", raw_e).strip()[:80]
-        return f"Gemini ({m_name}){tag_str} Error ({short_msg}) → Auto-Switched"
+        return f"Gemini ({m_name}) Error ({short_msg}) → Auto-Switched to Groq"
 
     if not has_gemini_key:
         _LAST_GEMINI_ERROR_SUMMARY = f"Gemini ({model_name}) API Key Not Configured → Using Groq Fallback"
 
-    gemini_keys_to_try = [k for k in GEMINI_API_KEYS if k not in _EXHAUSTED_GEMINI_KEYS]
-    if not gemini_keys_to_try and GEMINI_API_KEYS:
-        gemini_keys_to_try = list(GEMINI_API_KEYS)
+    models_to_try = [model_name] if model_name not in _EXHAUSTED_GEMINI_MODELS else []
 
-    if HAS_GENAI and gemini_keys_to_try:
-        models_to_try = [model_name] if model_name not in _EXHAUSTED_GEMINI_MODELS else list(GEMINI_MODEL_CHAIN)
+    if HAS_GENAI and has_gemini_key and models_to_try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
 
-        for k_idx, active_gemini_key in enumerate(gemini_keys_to_try):
-            key_num = GEMINI_API_KEYS.index(active_gemini_key) + 1 if active_gemini_key in GEMINI_API_KEYS else k_idx + 1
-            key_tag = f"Key #{key_num}" if len(GEMINI_API_KEYS) > 1 else ""
+        for candidate_model in models_to_try:
+            try:
+                logger.info(
+                    "Sending single batched Gold analysis request to primary Gemini model '%s'...",
+                    candidate_model,
+                )
+                response = client.models.generate_content(
+                    model=candidate_model,
+                    contents=json.dumps(batched_prompt_payload, indent=2),
+                    config=types.GenerateContentConfig(
+                        system_instruction=GOLD_SYSTEM_INSTRUCTION,
+                        response_mime_type="application/json",
+                        response_schema=GoldAnalysisReport,
+                        temperature=0.0,
+                    ),
+                )
 
-            client = genai.Client(api_key=active_gemini_key)
-            key_exhausted = False
+                validated = GoldAnalysisReport.model_validate_json(response.text)
+                output = _reconcile_and_validate_analysis(validated.model_dump(), payload)
+                output["analysis_engine"] = f"gemini_api ({candidate_model})"
+                output["engine_error_detail"] = ""
+                _LAST_GEMINI_ERROR_SUMMARY = None
+                return output
 
-            for candidate_model in models_to_try:
-                try:
-                    logger.info(
-                        "Sending single batched Gold analysis request to Gemini model '%s'%s...",
-                        candidate_model,
-                        f" using {key_tag}" if key_tag else "",
-                    )
-                    response = client.models.generate_content(
-                        model=candidate_model,
-                        contents=json.dumps(batched_prompt_payload, indent=2),
-                        config=types.GenerateContentConfig(
-                            system_instruction=GOLD_SYSTEM_INSTRUCTION,
-                            response_mime_type="application/json",
-                            response_schema=GoldAnalysisReport,
-                            temperature=0.0,
-                        ),
-                    )
-
-                    validated = GoldAnalysisReport.model_validate_json(response.text)
-                    output = _reconcile_and_validate_analysis(validated.model_dump(), payload)
-                    engine_label = f"gemini_api ({candidate_model})"
-                    if key_tag:
-                        engine_label += f" • {key_tag}"
-                    output["analysis_engine"] = engine_label
-                    output["engine_error_detail"] = ""
-                    _LAST_GEMINI_ERROR_SUMMARY = None
-                    return output
-
-                except Exception as exc:
-                    last_error = exc
-                    _LAST_GEMINI_ERROR_SUMMARY = _format_gemini_error(exc, candidate_model, key_tag)
-                    raw_e = str(exc).upper()
-                    if "429" in raw_e or "RESOURCE_EXHAUSTED" in raw_e or "QUOTA" in raw_e or "400" in raw_e or "403" in raw_e:
-                        _EXHAUSTED_GEMINI_KEYS.add(active_gemini_key)
-                        key_exhausted = True
-                        logger.warning(
-                            "%s. Marking %s as exhausted and trying next key/engine...",
-                            _LAST_GEMINI_ERROR_SUMMARY,
-                            key_tag or "API key",
-                        )
-                        break
-                    else:
-                        _EXHAUSTED_GEMINI_MODELS.add(candidate_model)
-
-            if key_exhausted and k_idx < len(gemini_keys_to_try) - 1:
-                continue
+            except Exception as exc:
+                last_error = exc
+                _LAST_GEMINI_ERROR_SUMMARY = _format_gemini_error(exc, candidate_model)
+                _EXHAUSTED_GEMINI_MODELS.add(candidate_model)
+                logger.warning(
+                    "%s. Switching immediately to Groq fallback...",
+                    _LAST_GEMINI_ERROR_SUMMARY,
+                )
+                break
 
     # Automatic failover to Groq API when Gemini fails or hits quota
     if has_groq_key:

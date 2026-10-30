@@ -39,13 +39,21 @@ ADMIN_ACCOUNT: Dict[str, Any] = {
 # BEGIN_USERS_LIST
 USERS_LIST: List[Dict[str, Any]] = [
     {
-    "username": "arafat",
-    "password": "arafat69",
-    "display_name": "Arafat (Junior Trader)",
-    "role": "Trader",
-    "active": True,
-    "created_at": "29 Oct 2026, 06:00 AM BST",
-}
+        "username": "pallab",
+        "password": "pallab1234",
+        "display_name": "Pallab Ghosh (Senior Trader)",
+        "role": "user",
+        "active": True,
+        "created_at": "30 Oct 2026, 03:30 PM BST",
+    },
+    {
+        "username": "arafat",
+        "password": "arafat69",
+        "display_name": "Arafat (Junior Trader)",
+        "role": "Trader",
+        "active": True,
+        "created_at": "29 Oct 2026, 06:00 AM BST",
+    },
 ]
 # END_USERS_LIST
 
